@@ -1,7 +1,7 @@
 import struct
 import logging
-import binascii
-
+import inspect
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ def decode(data):
     hdr = ConfigMessageHeader()
     if (len(data) < hdr.header_length):
         return (None, data)
-    
+
     # Find first sync byte and decode from that position
     pos = data.find(ConfigMessageHeader.sync)
     if pos < 0:
@@ -21,65 +21,14 @@ def decode(data):
     hdr.unpack(data[pos:])
 
     msg = None
-    if (hdr.cmd == GenericResponse.cmd):
-        msg = GenericResponse()
-    elif (hdr.cmd == ConfigMessage_CFG_READ_REQ.cmd):
-        msg = ConfigMessage_CFG_READ_REQ()
-    elif (hdr.cmd == ConfigMessage_CFG_READ_RESP.cmd):
-        msg = ConfigMessage_CFG_READ_RESP()
-    elif (hdr.cmd == ConfigMessage_CFG_WRITE_REQ.cmd):
-        msg = ConfigMessage_CFG_WRITE_REQ()
-    elif (hdr.cmd == ConfigMessage_CFG_SAVE_REQ.cmd):
-        msg = ConfigMessage_CFG_SAVE_REQ()
-    elif (hdr.cmd == ConfigMessage_CFG_RESTORE_REQ.cmd):
-        msg = ConfigMessage_CFG_RESTORE_REQ()
-    elif (hdr.cmd == ConfigMessage_CFG_ERASE_REQ.cmd):
-        msg = ConfigMessage_CFG_ERASE_REQ()
-    elif (hdr.cmd == ConfigMessage_CFG_PROTECT_REQ.cmd):
-        msg = ConfigMessage_CFG_PROTECT_REQ()
-    elif (hdr.cmd == ConfigMessage_CFG_UNPROTECT_REQ.cmd):
-        msg = ConfigMessage_CFG_UNPROTECT_REQ()
-    elif (hdr.cmd == ConfigMessage_GPS_WRITE_REQ.cmd):
-        msg = ConfigMessage_GPS_WRITE_REQ()
-    elif (hdr.cmd == ConfigMessage_GPS_READ_REQ.cmd):
-        msg = ConfigMessage_GPS_READ_REQ()
-    elif (hdr.cmd == ConfigMessage_GPS_RESP.cmd):
-        msg = ConfigMessage_GPS_RESP()
-    elif (hdr.cmd == ConfigMessage_GPS_CONFIG_REQ.cmd):
-        msg = ConfigMessage_GPS_CONFIG_REQ()
-    elif (hdr.cmd == ConfigMessage_BLE_CONFIG_REQ.cmd):
-        msg = ConfigMessage_BLE_CONFIG_REQ()
-    elif (hdr.cmd == ConfigMessage_BLE_WRITE_REQ.cmd):
-        msg = ConfigMessage_BLE_WRITE_REQ()
-    elif (hdr.cmd == ConfigMessage_BLE_READ_REQ.cmd):
-        msg = ConfigMessage_BLE_READ_REQ()
-    elif (hdr.cmd == ConfigMessage_STATUS_REQ.cmd):
-        msg = ConfigMessage_STATUS_REQ()
-    elif (hdr.cmd == ConfigMessage_STATUS_RESP.cmd):
-        msg = ConfigMessage_STATUS_RESP()
-    elif (hdr.cmd == ConfigMessage_FW_SEND_IMAGE_REQ.cmd):
-        msg = ConfigMessage_FW_SEND_IMAGE_REQ()
-    elif (hdr.cmd == ConfigMessage_FW_SEND_IMAGE_COMPLETE_IND.cmd):
-        msg = ConfigMessage_FW_SEND_IMAGE_COMPLETE_IND()
-    elif (hdr.cmd == ConfigMessage_FW_APPLY_IMAGE_REQ.cmd):
-        msg = ConfigMessage_FW_APPLY_IMAGE_REQ()
-    elif (hdr.cmd == ConfigMessage_RESET_REQ.cmd):
-        msg = ConfigMessage_RESET_REQ()
-    elif (hdr.cmd == ConfigMessage_CFG_READ_RESP.cmd):
-        msg = ConfigMessage_CFG_READ_RESP()
-    elif (hdr.cmd == ConfigMessage_BATTERY_STATUS_RESP.cmd):
-        msg = ConfigMessage_BATTERY_STATUS_RESP()
-    elif (hdr.cmd == ConfigMessage_LOG_CREATE_REQ.cmd):
-        msg = ConfigMessage_LOG_CREATE_REQ()
-    elif (hdr.cmd == ConfigMessage_LOG_ERASE_REQ.cmd):
-        msg = ConfigMessage_LOG_ERASE_REQ()
-    elif (hdr.cmd == ConfigMessage_LOG_READ_REQ.cmd):
-        msg = ConfigMessage_LOG_READ_REQ()
-    elif (hdr.cmd == ConfigMessage_LOG_READ_RESP.cmd):
-        msg = ConfigMessage_LOG_READ_RESP()
-    else:
-        logger.error('Unknown message type: %u' % (hdr.cmd))
-        logger.debug('Dump: %s', binascii.hexlify(data))
+    unused_cls = [ ConfigMessage, ConfigMessageHeader ]
+    for i in inspect.getmembers(sys.modules[__name__], inspect.isclass):
+        cls = i[1]
+        if issubclass(cls, ConfigMessageHeader) and cls not in unused_cls and \
+            msg.cmd == cls.cmd:
+            msg = cls()
+            break
+
     if (msg):
         msg.unpack(data)
         # Advance buffer past this message
@@ -88,7 +37,16 @@ def decode(data):
     return (msg, data)
 
 
-class Blob(object):
+def convert_to_dict(obj):
+    d = {}
+    ignore = ['error_code', 'cmd', 'sync']
+    for i in obj._args:
+        if i not in ignore:
+            d[i] = obj.i
+    return d
+
+
+class _Blob(object):
     """Blob object is a container for arbitrary message fields which
     can be packed / unpacked using python struct"""
     _fmt = ''
@@ -122,12 +80,12 @@ class Blob(object):
         return s
 
 
-class ConfigMessageHeader(Blob):
+class ConfigMessageHeader(_Blob):
     """Configuration message header"""
     sync = b'\x7E'
 
     def __init__(self, bytes_to_follow=0):
-        Blob.__init__(self, b'B', ['sync', 'cmd'])
+        _Blob.__init__(self, b'B', ['sync', 'cmd'])
         self.header_length = struct.calcsize(self._fmt)
         self.length = self.header_length + bytes_to_follow
 
@@ -301,6 +259,9 @@ class ConfigMessage_FW_SEND_IMAGE_COMPLETE_IND(GenericResponse):
 
     cmd = 18
     name = 'FW_SEND_IMAGE_COMPLETE_IND'
+
+    def __init__(self, **kwargs):
+        ConfigMessage.__init__(self, b'B', ['error_code'], **kwargs)
 
 
 class ConfigMessage_FW_APPLY_IMAGE_REQ(ConfigMessage):

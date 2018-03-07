@@ -1,5 +1,3 @@
-from config import *
-from message import *
-from pyusb import *
+from interface import *
 
 __version__ = '0.1.0'

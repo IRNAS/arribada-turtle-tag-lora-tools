@@ -9,6 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 def _flatdict(base, olddict, newdict):
+    """Convert a JSON dict to a flat dict i.e., nested dictionaries
+    are assigned using dotted notation to represent hierarchy e.g.,
+    bluetooth.advertising"""
     for i in olddict.keys():
         if isinstance(olddict[i], dict):
             _flatdict(base + ('.' if base else '') + i, olddict[i], newdict)
@@ -18,11 +21,18 @@ def _flatdict(base, olddict, newdict):
 
 
 def _pathsplit(fullpath):
+    """Splits out the fullpath into a tuple comprising the variable name
+    (i.e., given x.y.z, this would be z) and the root path (i.e., would
+    be x.y given the previous example)"""
     items = fullpath.split('.')
     return ('.'.join(items[:-1]), items[-1])
 
 
 def _findclass(fullpath):
+    """Give a path name we identify to which configuration class it
+    belongs.  The path uniquely identifies every configuration value
+    and the root path denotes which class it belongs i.e., this code 
+    performs a reverse search across all classes."""
     (path, param) = _pathsplit(fullpath)
     for i in inspect.getmembers(sys.modules[__name__], inspect.isclass):
         cls = i[1]
@@ -33,7 +43,9 @@ def _findclass(fullpath):
 
 
 def decode(data):
-    """Attempt to decode a message from an input data buffer"""
+    """Attempt to decode a single configuration item from an input data buffer.
+    A tuple is returned containing an instance of the configuration object plus
+    the input data buffer, less the amount of data consumed."""
     item = TaggedItem()
     if (len(data) < item.header_length):
         return (None, data)
@@ -41,6 +53,7 @@ def decode(data):
     # Unpack header tag at current position
     item.unpack(data)
 
+    # Find the correct configuration class based on the configuration tag
     cfg = None
     for i in inspect.getmembers(sys.modules[__name__], inspect.isclass):
         cls = i[1]
@@ -52,7 +65,7 @@ def decode(data):
         try:
             cfg.unpack(data)
         except:
-        # Likely insufficient bytes to unpack
+            # Likely insufficient bytes to unpack
             return (None, data)
         # Advance buffer past this configuration item
         data = data[cfg.length:]
@@ -61,6 +74,9 @@ def decode(data):
 
 
 def decode_all(data):
+    """Iteratively decode an input data buffer to a list of configuration
+    objects.
+    """
     objects = []
     while data:
         (cfg, data) = decode(data)
@@ -72,6 +88,9 @@ def decode_all(data):
 
 
 def encode_all(objects):
+    """Encode a list of configuration objects, in order, to a serial byte
+    stream.
+    """
     data = b''
     for i in objects:
         data += i.pack()
@@ -79,6 +98,8 @@ def encode_all(objects):
 
 
 def json_dumps(objects):
+    """Convert a list of configuration objects representing a configuration
+    set to JSON format."""
     obj_hash = {}
     for i in objects:
         h = obj_hash
@@ -93,6 +114,8 @@ def json_dumps(objects):
 
 
 def json_loads(text):
+    """Convert JSON text representing a configuration set to a list
+    of configuration objects."""
     obj = {}
     flat = _flatdict('', json.loads(text), {})
     for i in flat:
@@ -104,7 +127,7 @@ def json_loads(text):
     return [obj[i] for i in obj]
 
 
-class Blob(object):
+class _Blob(object):
     """Blob object is a container for arbitrary message fields which
     can be packed / unpacked using python struct"""
     _fmt = ''
@@ -138,10 +161,10 @@ class Blob(object):
         return s
 
 
-class TaggedItem(Blob):
+class TaggedItem(_Blob):
     """Configuration item bare (without any value)"""
     def __init__(self, bytes_to_follow=0):
-        Blob.__init__(self, b'<H', ['tag'])
+        _Blob.__init__(self, b'<H', ['tag'])
         self.header_length = struct.calcsize(self._fmt)
         self.length = self.header_length + bytes_to_follow
 
