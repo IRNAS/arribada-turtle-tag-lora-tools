@@ -11,6 +11,7 @@ parser.add_argument('--read_log', type=argparse.FileType('wb'), required=False)
 parser.add_argument('--battery', action='store_true', required=False)
 parser.add_argument('--status', action='store_true', required=False)
 parser.add_argument('--save', action='store_true', required=False)
+parser.add_argument('--restore', action='store_true', required=False)
 parser.add_argument('--erase', action='store_true', required=False)
 parser.add_argument('--erase_log', action='store_true', required=False)
 parser.add_argument('--protect', action='store_true', required=False)
@@ -36,6 +37,9 @@ if args.read_log:
 if args.erase_log:
     cfg.erase_log_file()
 
+if args.restore:
+    cfg.restore_configuration()
+
 if args.unprotect:
     cfg.unprotect_configuration()
 
@@ -44,6 +48,9 @@ if args.erase:
 
 if args.write:
     cfg.write_json_configuration(args.write.read())
+
+if args.save:
+    cfg.save_configuration()
 
 if args.read:
     args.read.write(cfg.read_json_configuration())
