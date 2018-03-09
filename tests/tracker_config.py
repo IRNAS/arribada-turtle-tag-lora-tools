@@ -1,6 +1,6 @@
 import argparse
 import logging
-from arribada_tools import backend, interface
+from arribada_tools import backend, interface, config
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--uuid', dest='bluetooth_uuid', required=False)
@@ -16,7 +16,8 @@ parser.add_argument('--erase', action='store_true', required=False)
 parser.add_argument('--erase_log', action='store_true', required=False)
 parser.add_argument('--protect', action='store_true', required=False)
 parser.add_argument('--unprotect', action='store_true', required=False)
-parser.add_argument('--datetime', required=False)
+parser.add_argument('--setdatetime', required=False)
+parser.add_argument('--getdatetime', action='store_true', required=False)
 parser.add_argument('--firmware_type', type=int, required=False)
 parser.add_argument('--firmware', type=argparse.FileType('rb'), required=False)
 
@@ -50,8 +51,11 @@ if args.erase:
 if args.write:
     cfg.write_json_configuration(args.write.read())
 
-if args.datetime:
+if args.setdatetime:
     cfg.write_json_configuration('"rtc": { "dateTime": "%s"}' % args.datetime)
+
+if args.getdatetime:
+    print cfg.read_json_configuration(tag=config.ConfigItem_RTC_CurrentDateTime.tag)
 
 if args.save:
     cfg.save_configuration()
