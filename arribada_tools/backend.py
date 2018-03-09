@@ -6,6 +6,10 @@ class ExceptionBackendNotFound(Exception):
     pass
 
 
+class ExceptionBackendNotImplemented(Exception):
+    pass
+
+
 class _Backend(object):
 
     def __init__(self, **kwargs):
@@ -22,7 +26,9 @@ class _Backend(object):
 
 
 class BackendBluetooth(_Backend):
-    pass
+
+    def __init__(self, uuid=None):
+        raise ExceptionBackendNotImplemented
 
 
 class BackendUsb(_Backend):

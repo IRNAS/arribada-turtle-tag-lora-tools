@@ -214,6 +214,15 @@ class ConfigItem_GPS_TriggerMode(ConfigItem):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
 
 
+class ConfigItem_GPS_UARTBaudRate(ConfigItem):
+    tag = 0x0003
+    path = 'gps'
+    params = ['uartBaudRate']
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+
+
 class ConfigItem_RTC_SyncToGPSEnable(ConfigItem):
     tag = 0x0600
     path = 'rtc'

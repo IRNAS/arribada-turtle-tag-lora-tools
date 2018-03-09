@@ -1,5 +1,4 @@
 import config
-import backend
 import message
 import logging
 import binascii
@@ -8,7 +7,7 @@ import binascii
 logger = logging.getLogger(__name__)
 
 
-class ExceptionCommsError(Exception):
+class ExceptionBackendCommsError(Exception):
     pass
 
 
@@ -16,11 +15,15 @@ class ConfigInterface(object):
 
     timeout = 2.0
 
-    def __init__(self, **kwargs):
-        if 'uuid' in kwargs:
-            self._backend = backend.BackendBluetooth(kwargs)
-        else:
-            self._backend = backend.BackendUsb()
+    def __init__(self, backend):
+        self._backend = backend
+
+    def gps_config(self, enable):
+        cmd = message.ConfigMessage_GPS_CONFIG_REQ(enable=enable)
+        resp = self._backend.command_response(cmd, self.timeout)
+        if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
+            logger.error('Bad response to GPS_CONFIG_REQ')
+            raise ExceptionBackendCommsError
 
     def write_json_configuration(self, json):
         objs = config.json_loads(json)
@@ -29,23 +32,23 @@ class ConfigInterface(object):
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to CFG_WRITE_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
         length = self._backend.write(config_data, self.timeout)
         if length != len(config_data):
             logger.error('Failed to send all configuration bytes (%u/%u)', length, len(config_data))
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
 
     def read_json_configuration(self, tag=0xFFFF):
         cmd = message.ConfigMessage_CFG_READ_REQ(cfg_tag=tag)
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'CFG_READ_RESP' or resp.error_code:
             logger.error('Bad response to CFG_READ_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
         config_data = self._backend.read(resp.length, self.timeout)
         if resp.length != len(config_data) or resp.error_code:
             logger.error('Failed to receive expected configuration bytes (%u/%u)',
                          len(config_data), resp.length)
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
         objs = config.decode_all(config_data)
         return config.json_dumps(objs)
 
@@ -54,35 +57,35 @@ class ConfigInterface(object):
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to CFG_PROTECT_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
 
     def unprotect_configuration(self):
         cmd = message.ConfigMessage_CFG_UNPROTECT_REQ()
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to CFG_UNPROTECT_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
 
     def erase_configuration(self, tag=0xFFFF):
         cmd = message.ConfigMessage_CFG_ERASE_REQ(cfg_tag=tag)
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to CFG_ERASE_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
 
     def restore_configuration(self):
         cmd = message.ConfigMessage_CFG_RESTORE_REQ()
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to CFG_RESTORE_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
 
     def save_configuration(self):
         cmd = message.ConfigMessage_CFG_SAVE_REQ()
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to CFG_SAVE_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
 
     def create_log_file(self, file_type, sync_enable, max_size):
         cmd = message.ConfigMessage_LOG_CREATE_REQ(mode=file_type,
@@ -91,21 +94,21 @@ class ConfigInterface(object):
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to LOG_CREATE_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
 
     def erase_log_file(self):
         cmd = message.ConfigMessage_LOG_ERASE_REQ()
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to LOG_ERASE_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
 
     def read_log_file(self, start_offset=0, length=0):
         cmd = message.ConfigMessage_LOG_READ_REQ(start_offset=start_offset, length=length)
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'LOG_READ_RESP' or resp.error_code:
             logger.error('Bad response to LOG_READ_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
         return self._backend.read(resp.length, self.timeout)
 
     def fw_upgrade(self, image_type, data):
@@ -116,30 +119,30 @@ class ConfigInterface(object):
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to FW_SEND_IMAGE_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
         length = self._backend.write(data, self.timeout)
         if length != len(data):
             logger.error('Failed to send all firmware data bytes (%u/%u)', length, len(data))
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
         cmd = message.ConfigMessage_FW_APPLY_IMAGE_REQ(image_type=image_type)
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to FW_APPLY_IMAGE_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
 
     def reset(self):
         cmd = message.ConfigMessage_RESET_REQ()
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to RESET_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
 
     def get_battery_status(self):
         cmd = message.ConfigMessage_BATTERY_STATUS_REQ()
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'BATTERY_STATUS_RESP' or resp.error_code:
             logger.error('Bad response to BATTERY_STATUS_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
         return message.convert_to_dict(resp)
 
     def get_status(self):
@@ -147,5 +150,5 @@ class ConfigInterface(object):
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'STATUS_RESP' or resp.error_code:
             logger.error('Bad response to STATUS_REQ')
-            raise ExceptionCommsError
+            raise ExceptionBackendCommsError
         return message.convert_to_dict(resp)
