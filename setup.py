@@ -25,15 +25,15 @@ setup(
     include_package_data=True,
     install_requires=[
         'setuptools',
+        'pyusb >= 1.0.2',
+        'pyserial >= 3.4',
+        'python-dateutil >= 2.6.1',
+        'libusb1 >= 1.6.4',
     ],
     test_suite='nose.collector',
     tests_require=[
         'nose',
         'mock >= 1.0',
-        'pyusb >= 1.0.2',
-        'pyserial >= 3.4',
-        'python-dateutil >= 2.6.1',
-        'libusb1 >= 1.6.4',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
