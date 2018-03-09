@@ -16,6 +16,7 @@ parser.add_argument('--erase', action='store_true', required=False)
 parser.add_argument('--erase_log', action='store_true', required=False)
 parser.add_argument('--protect', action='store_true', required=False)
 parser.add_argument('--unprotect', action='store_true', required=False)
+parser.add_argument('--datetime', required=False)
 parser.add_argument('--firmware_type', type=int, required=False)
 parser.add_argument('--firmware', type=argparse.FileType('rb'), required=False)
 
@@ -48,6 +49,9 @@ if args.erase:
 
 if args.write:
     cfg.write_json_configuration(args.write.read())
+
+if args.datetime:
+    cfg.write_json_configuration('"rtc": { "dateTime": "%s"}' % args.datetime)
 
 if args.save:
     cfg.save_configuration()
