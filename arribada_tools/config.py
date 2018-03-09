@@ -370,23 +370,33 @@ class ConfigItem_BLE_BeaconEnable(ConfigItem):
 class ConfigItem_BLE_GeoFenceTriggerLocation(ConfigItem):
     tag = 0x0502
     path = 'bluetooth.geofence'
-    params = ['longitude', 'latitude', 'height']
+    params = ['longitude', 'latitude', 'radius']
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'lll', self.params, **kwargs)
+        ConfigItem.__init__(self, b'2lL', self.params, **kwargs)
 
+    def pack(self):
+        longitude = self.longitude
+        latitude = self.latitude
+        radius = self.radius
+        self.longitude = int(self.longitude / 1E-7)
+        self.latitude = int(self.latitude / 1E-7)
+        self.radius = int(self.radius / 1E-2)
+        data = ConfigItem.pack(self)
+        self.longitude = longitude
+        self.latitude = latitude
+        self.radius = radius
+        return data
 
-class ConfigItem_BLE_GeoFenceTriggerRadius(ConfigItem):
-    tag = 0x0503
-    path = 'bluetooth.geofence'
-    params = ['radius']
-
-    def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'L', self.params, **kwargs)
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        self.longitude = 1E-7 * self.longitude
+        self.latitude = 1E-7 * self.latitude
+        self.radius = 1E-2 * self.radius
 
 
 class ConfigItem_BLE_BeaconAdvertisingInterval(ConfigItem):
-    tag = 0x0504
+    tag = 0x0503
     path = 'bluetooth.advertising'
     params = ['interval']
 
@@ -395,7 +405,7 @@ class ConfigItem_BLE_BeaconAdvertisingInterval(ConfigItem):
 
 
 class ConfigItem_BLE_BeaconAdvertisingConfiguration(ConfigItem):
-    tag = 0x0505
+    tag = 0x0504
     path = 'bluetooth.advertising'
     params = ['configuration']
 
