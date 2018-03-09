@@ -3,9 +3,15 @@ import logging
 import sys
 import json
 import inspect
-
+import binascii
+import datetime
+import dateutil.parser
 
 logger = logging.getLogger(__name__)
+
+
+class ExceptionConfigInvalidValue(Exception):
+    pass
 
 
 def _flatdict(base, olddict, newdict):
@@ -37,7 +43,7 @@ def _findclass(fullpath):
     for i in inspect.getmembers(sys.modules[__name__], inspect.isclass):
         cls = i[1]
         if issubclass(cls, ConfigItem) and cls != ConfigItem and path == cls.path and \
-            param in cls.params:
+            param in cls.json_params:
             return (path, param, cls)
     return (None, None, None)
 
@@ -108,7 +114,7 @@ def json_dumps(objects):
             if j not in h:
                 h[j] = {}
             h = h[j]
-        for j in i.params:
+        for j in i.json_params:
             h[j] = getattr(i, j)
     return json.dumps(obj_hash)
 
@@ -186,11 +192,29 @@ class ConfigItem_System_DeviceIdentifier(ConfigItem):
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'8s', self.params, **kwargs)
 
+    def pack(self):
+        old = self.deviceIdentifier
+        self.deviceIdentifier = binascii.unhexlify(self.deviceIdentifier.replace(':', ''))
+        data = ConfigItem.pack(self)
+        self.deviceIdentifier = old
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        device_id = binascii.hexlify(self.deviceIdentifier)
+        new_id = b''
+        for i in range(len(device_id)):
+            new_id = new_id + device_id[i]
+            if i & 1 and i != (len(device_id)-1):
+                new_id = new_id + ':'
+        self.deviceIdentifier = new_id
+
 
 class ConfigItem_GPS_LogPositionEnable(ConfigItem):
     tag = 0x0000
     path = 'gps'
     params = ['logPositionEnable']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
@@ -200,6 +224,7 @@ class ConfigItem_GPS_LogTTFFEnable(ConfigItem):
     tag = 0x0001
     path = 'gps'
     params = ['logTTFFEnable']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
@@ -209,6 +234,7 @@ class ConfigItem_GPS_TriggerMode(ConfigItem):
     tag = 0x0002
     path = 'gps'
     params = ['triggerMode']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
@@ -218,6 +244,7 @@ class ConfigItem_GPS_UARTBaudRate(ConfigItem):
     tag = 0x0003
     path = 'gps'
     params = ['uartBaudRate']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'I', self.params, **kwargs)
@@ -227,6 +254,7 @@ class ConfigItem_RTC_SyncToGPSEnable(ConfigItem):
     tag = 0x0600
     path = 'rtc'
     params = ['syncToGPSEnable']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
@@ -236,15 +264,42 @@ class ConfigItem_RTC_CurrentDateTime(ConfigItem):
     tag = 0x0601
     path = 'rtc'
     params = ['day', 'month', 'year', 'hours', 'minutes', 'seconds']
+    json_params = ['dateTime']
 
     def __init__(self, **kwargs):
+        if 'dateTime' in kwargs:
+            self.dateTime = kwargs['dateTime']
+            del kwargs['dateTime']
+        else:
+            self.dateTime = None
         ConfigItem.__init__(self, b'BBIBBB', self.params, **kwargs)
 
+    def pack(self):
+        if self.dateTime:
+            d = dateutil.parser.parse(self.dateTime)
+            self.day = d.day
+            self.month = d.month
+            self.year = d.year
+            self.hours = d.hour
+            self.minutes = d.minute
+            self.seconds = d.second
+        return ConfigItem.pack(self)
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        d = datetime.datetime(day=self.day,
+                     month=self.month,
+                     year=self.year,
+                     hour=self.hours,
+                     minute=self.minutes,
+                     second=self.seconds)
+        self.dateTime = d.ctime()
 
 class ConfigItem_Logging_Enable(ConfigItem):
     tag = 0x0100
     path = 'logging'
     params = ['enable']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
@@ -254,6 +309,7 @@ class ConfigItem_Logging_BytesWritten(ConfigItem):
     tag = 0x0101
     path = 'logging'
     params = ['bytesWritten']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'L', self.params, **kwargs)
@@ -263,6 +319,7 @@ class ConfigItem_Logging_FileSize(ConfigItem):
     tag = 0x0102
     path = 'logging'
     params = ['fileSize']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'L', self.params, **kwargs)
@@ -272,15 +329,38 @@ class ConfigItem_Logging_FileType(ConfigItem):
     tag = 0x0103
     path = 'logging'
     params = ['fileType']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
+
+    def pack(self):
+        fileType = self.fileType
+        if self.fileType == 'LINEAR':
+            self.fileType = 0
+        elif self.fileType == 'CIRCULAR':
+            self.fileType = 1
+        else:
+            raise ExceptionConfigInvalidValue
+        data = ConfigItem.pack(self)
+        self.fileType = fileType
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        if (self.fileType == 0):
+            self.fileType = 'LINEAR'
+        elif (self.fileType == 1):
+            self.fileType = 'CIRCULAR'
+        else:
+            self.fileType = 'UNKNOWN'
 
 
 class ConfigItem_Logging_GroupSensorReadingsEnable(ConfigItem):
     tag = 0x0104
     path = 'logging'
     params = ['groupSensorReadingsEnable']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
@@ -290,6 +370,7 @@ class ConfigItem_Logging_StartEndSyncEnable(ConfigItem):
     tag = 0x0105
     path = 'logging'
     params = ['startEndSyncEnable']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
@@ -299,6 +380,7 @@ class ConfigItem_Logging_DateTimeStampEnable(ConfigItem):
     tag = 0x0106
     path = 'logging'
     params = ['dateTimeStampEnable']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
@@ -308,60 +390,271 @@ class ConfigItem_Logging_HighResolutionTimerEnable(ConfigItem):
     tag = 0x0106
     path = 'logging'
     params = ['highResolutionTimerEnable']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
 
 
 class ConfigItem_AXL_LogEnable(ConfigItem):
-    tag = 0x0300
+    tag = 0x0200
     path = 'accelerometer'
     params = ['logEnable']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
 
 
-class ConfigItem_AXL_SampleRate(ConfigItem):
-    tag = 0x0301
+class ConfigItem_AXL_Config(ConfigItem):
+    tag = 0x0201
     path = 'accelerometer'
-    params = ['sampleRate']
+    params = ['config']
+    json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+        ConfigItem.__init__(self, b'B', self.params, **kwargs)
 
 
-class ConfigItem_AXL_LowThreshold(ConfigItem):
-    tag = 0x0302
+class ConfigItem_AXL_SampleRate(ConfigItem):
+    tag = 0x0203
     path = 'accelerometer'
-    params = ['lowThreshold']
+    params = ['sampleRate']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'I', self.params, **kwargs)
 
 
 class ConfigItem_AXL_HighThreshold(ConfigItem):
-    tag = 0x0303
+    tag = 0x0202
     path = 'accelerometer'
+    params = ['highThreshold']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+
+
+class ConfigItem_AXL_Mode(ConfigItem):
+    tag = 0x0204
+    path = 'accelerometer'
+    params = ['mode']
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'B', self.params, **kwargs)
+
+    def pack(self):
+        mode = self.mode
+        if self.mode == 'PERIODIC':
+            self.mode = 0
+        elif self.mode == 'TRIGGER_ABOVE':
+            self.mode = 3
+        else:
+            raise ExceptionConfigInvalidValue
+        data = ConfigItem.pack(self)
+        self.mode = mode
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        if (self.mode == 0):
+            self.mode = 'PERIODIC'
+        elif (self.mode == 3):
+            self.mode = 'TRIGGER_ABOVE'
+        else:
+            self.mode = 'UNKNOWN'
+
+
+class ConfigItem_PressureSensor_LogEnable(ConfigItem):
+    tag = 0x0300
+    path = 'pressure_sensor'
+    params = ['logEnable']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'?', self.params, **kwargs)
+
+
+class ConfigItem_PressureSensor_SampleRate(ConfigItem):
+    tag = 0x0301
+    path = 'pressure_sensor'
+    params = ['sampleRate']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+
+
+class ConfigItem_PressureSensor_LowThreshold(ConfigItem):
+    tag = 0x0302
+    path = 'pressure_sensor'
+    params = ['lowThreshold']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+
+
+class ConfigItem_PressureSensor_HighThreshold(ConfigItem):
+    tag = 0x0303
+    path = 'pressure_sensor'
     params = ['highThreshold']
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'I', self.params, **kwargs)
 
 
+class ConfigItem_PressureSensor_Mode(ConfigItem):
+    tag = 0x0304
+    path = 'pressure_sensor'
+    params = ['mode']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'B', self.params, **kwargs)
+
+    def pack(self):
+        mode = self.mode
+        if self.mode == 'PERIODIC':
+            self.mode = 0
+        elif self.mode == 'TRIGGER_BELOW':
+            self.mode = 1
+        elif self.mode == 'TRIGGER_BETWEEN':
+            self.mode = 2
+        elif self.mode == 'TRIGGER_ABOVE':
+            self.mode = 3
+        else:
+            raise ExceptionConfigInvalidValue
+        data = ConfigItem.pack(self)
+        self.mode = mode
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        if (self.mode == 0):
+            self.mode = 'PERIODIC'
+        elif (self.mode == 1):
+            self.mode = 'TRIGGER_BELOW'
+        elif (self.mode == 2):
+            self.mode = 'TRIGGER_BETWEEN'
+        elif (self.mode == 3):
+            self.mode = 'TRIGGER_ABOVE'
+        else:
+            self.mode = 'UNKNOWN'
+
+
+class ConfigItem_TempSensor_LogEnable(ConfigItem):
+    tag = 0x0700
+    path = 'temperate_sensor'
+    params = ['logEnable']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'?', self.params, **kwargs)
+
+
+class ConfigItem_TempSensor_SampleRate(ConfigItem):
+    tag = 0x0701
+    path = 'temperate_sensor'
+    params = ['sampleRate']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+
+
+class ConfigItem_TempSensor_LowThreshold(ConfigItem):
+    tag = 0x0702
+    path = 'temperate_sensor'
+    params = ['lowThreshold']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+
+
+class ConfigItem_TempSensor_HighThreshold(ConfigItem):
+    tag = 0x0703
+    path = 'temperate_sensor'
+    params = ['highThreshold']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+
+
+class ConfigItem_TempSensor_Mode(ConfigItem):
+    tag = 0x0704
+    path = 'temperate_sensor'
+    params = ['mode']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'B', self.params, **kwargs)
+
+    def pack(self):
+        mode = self.mode
+        if self.mode == 'PERIODIC':
+            self.mode = 0
+        elif self.mode == 'TRIGGER_BELOW':
+            self.mode = 1
+        elif self.mode == 'TRIGGER_BETWEEN':
+            self.mode = 2
+        elif self.mode == 'TRIGGER_ABOVE':
+            self.mode = 3
+        else:
+            raise ExceptionConfigInvalidValue
+        data = ConfigItem.pack(self)
+        self.mode = mode
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        if (self.mode == 0):
+            self.mode = 'PERIODIC'
+        elif (self.mode == 1):
+            self.mode = 'TRIGGER_BELOW'
+        elif (self.mode == 2):
+            self.mode = 'TRIGGER_BETWEEN'
+        elif (self.mode == 3):
+            self.mode = 'TRIGGER_ABOVE'
+        else:
+            self.mode = 'UNKNOWN'
+
+
 class ConfigItem_BLE_UUID(ConfigItem):
     tag = 0x0500
     path = 'bluetooth'
     params = ['UUID']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'16s', self.params, **kwargs)
+
+    def pack(self):
+        old = self.UUID
+        self.UUID = binascii.unhexlify(self.UUID.replace(':', ''))
+        data = ConfigItem.pack(self)
+        self.UUID = old
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        device_id = binascii.hexlify(self.UUID)
+        new_id = b''
+        for i in range(len(device_id)):
+            new_id = new_id + device_id[i]
+            if i & 1 and i != (len(device_id)-1):
+                new_id = new_id + ':'
+        self.UUID = new_id
 
 
 class ConfigItem_BLE_BeaconEnable(ConfigItem):
     tag = 0x0501
     path = 'bluetooth.beacon'
     params = ['enable']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
@@ -371,6 +664,7 @@ class ConfigItem_BLE_GeoFenceTriggerLocation(ConfigItem):
     tag = 0x0502
     path = 'bluetooth.geofence'
     params = ['longitude', 'latitude', 'radius']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'2lL', self.params, **kwargs)
@@ -399,6 +693,7 @@ class ConfigItem_BLE_BeaconAdvertisingInterval(ConfigItem):
     tag = 0x0503
     path = 'bluetooth.advertising'
     params = ['interval']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'I', self.params, **kwargs)
@@ -408,6 +703,28 @@ class ConfigItem_BLE_BeaconAdvertisingConfiguration(ConfigItem):
     tag = 0x0504
     path = 'bluetooth.advertising'
     params = ['configuration']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
+
+    def pack(self):
+        config = self.configuration
+        if self.configuration == 'IDENTITY':
+            self.configuration = 0
+        elif self.configuration == 'LOCATION':
+            self.configuration = 1
+        else:
+            raise ExceptionConfigInvalidValue
+        data = ConfigItem.pack(self)
+        self.configuration = config
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        if (self.configuration == 0):
+            self.configuration = 'IDENTITY'
+        elif (self.configuration == 1):
+            self.configuration = 'LOCATION'
+        else:
+            self.configuration = 'UNKNOWN'
