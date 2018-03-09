@@ -18,7 +18,7 @@ if args.debug:
 bridged_backend = None
 
 if args.serial:
-    gps_backend = gps_config.GPSSerialBackend(args.serial, baudrate=args.baud)
+    gps_backend = gps_config.GPSSerialBackend(args.serial, baudrate=args.baud, timeout=0.1)
 else:
     if args.bluetooth_uuid:
         bridged_backend = backend.BackendBluetooth(uuid=args.bluetooth_uuid)
@@ -30,7 +30,6 @@ else:
 data = ubx.ubx_build_from_ascii(args.cmd)
 gps_backend.read(1024)
 gps_backend.write(data)
-time.sleep(0.1)
 data = gps_backend.read()
 (msg, data) = ubx.ubx_extract(data)
 if msg:
