@@ -230,14 +230,35 @@ class ConfigItem_GPS_LogTTFFEnable(ConfigItem):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
 
 
-class ConfigItem_GPS_TriggerMode(ConfigItem):
+class ConfigItem_GPS_Mode(ConfigItem):
     tag = 0x0002
     path = 'gps'
-    params = ['triggerMode']
+    params = ['mode']
     json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
+
+    def pack(self):
+        mode = self.mode
+        if self.mode == 'PERIODIC':
+            self.mode = 0
+        elif self.mode == 'TRIGGERED':
+            self.mode = 1
+        else:
+            raise ExceptionConfigInvalidValue
+        data = ConfigItem.pack(self)
+        self.mode = mode
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        if (self.mode == 0):
+            self.mode = 'PERIODIC'
+        elif (self.mode == 1):
+            self.mode = 'TRIGGERED'
+        else:
+            self.mode = 'UNKNOWN'
 
 
 class ConfigItem_GPS_UARTBaudRate(ConfigItem):
