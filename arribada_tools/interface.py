@@ -87,7 +87,7 @@ class ConfigInterface(object):
             logger.error('Bad response to CFG_SAVE_REQ')
             raise ExceptionBackendCommsError
 
-    def create_log_file(self, file_type, sync_enable, max_size):
+    def create_log_file(self, file_type, sync_enable=False, max_size=0):
         cmd = message.ConfigMessage_LOG_CREATE_REQ(mode=file_type,
                                                    sync_enable=sync_enable,
                                                    max_file_size=max_size)

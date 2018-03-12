@@ -14,6 +14,7 @@ parser.add_argument('--save', action='store_true', required=False)
 parser.add_argument('--restore', action='store_true', required=False)
 parser.add_argument('--erase', action='store_true', required=False)
 parser.add_argument('--erase_log', action='store_true', required=False)
+parser.add_argument('--create_log', required=False)
 parser.add_argument('--protect', action='store_true', required=False)
 parser.add_argument('--unprotect', action='store_true', required=False)
 parser.add_argument('--setdatetime', required=False)
@@ -38,6 +39,9 @@ if args.read_log:
 
 if args.erase_log:
     cfg.erase_log_file()
+
+if args.create_log:
+    cfg.create_log_file(args.create_log)
 
 if args.restore:
     cfg.restore_configuration()

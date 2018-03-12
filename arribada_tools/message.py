@@ -6,6 +6,10 @@ import sys
 logger = logging.getLogger(__name__)
 
 
+class ExceptionMessageInvalidValue(Exception):
+    pass
+
+
 def decode(data):
     """Attempt to decode a message from an input data buffer"""
     hdr = ConfigMessageHeader()
@@ -304,6 +308,27 @@ class ConfigMessage_LOG_CREATE_REQ(ConfigMessage):
 
     def __init__(self, **kwargs):
         ConfigMessage.__init__(self, b'B?I', ['mode', 'sync_enable', 'max_file_size'], **kwargs)
+
+    def pack(self):
+        mode = self.mode
+        if self.mode == 'LINEAR':
+            self.mode = 0
+        elif self.mode == 'CIRCULAR':
+            self.mode = 1
+        else:
+            raise ExceptionMessageInvalidValue
+        data = ConfigMessage.pack(self)
+        self.mode = mode
+        return data
+
+    def unpack(self, data):
+        ConfigMessage.unpack(self, data)
+        if (self.mode == 0):
+            self.mode = 'LINEAR'
+        elif (self.mode == 1):
+            self.mode = 'CIRCULAR'
+        else:
+            self.mode = 'UNKNOWN'
 
 
 class ConfigMessage_LOG_ERASE_REQ(ConfigMessageHeader):
