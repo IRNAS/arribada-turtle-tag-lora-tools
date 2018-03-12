@@ -100,6 +100,8 @@ class UsbOverlappedEndpoint(threading.Thread):
 class ExceptionUsbDeviceNotFound(Exception):
     pass
 
+class ExceptionUsbDeviceFailedToClaim(Exception):
+    pass
 
 EP_MSG_IN = 0
 EP_MSG_OUT = 1
@@ -110,14 +112,22 @@ class UsbHost():
     VENDOR_ID  = 0x0483     # STMicroelectronics
     PRODUCT_ID = 0x0100     # Seemingly spare for now
 
+    dev = None
+
     def __init__(self):
         self._endpoints = []
-        dev = usb.core.find(idVendor=UsbHost.VENDOR_ID, idProduct=UsbHost.PRODUCT_ID)
-        if dev is None:
+        self.dev = usb.core.find(idVendor=UsbHost.VENDOR_ID, idProduct=UsbHost.PRODUCT_ID)
+        if self.dev is None:
             raise ExceptionUsbDeviceNotFound
         if os.name != 'posix':
-            dev.set_configuration()
-        iface = dev[0][(0,0)]   # Configuration #0 Interface #0
+            self.dev.set_configuration()
+        try:
+            usb.util.claim_interface(self.dev, 0)
+            logger.debug("Claimed device")
+        except:
+            logger.error("Failed to claim USB device. Device is already in use or python does not have root permissions")
+            raise ExceptionUsbDeviceFailedToClaim
+        iface = self.dev[0][(0,0)]   # Configuration #0 Interface #0
         self._endpoints = map(UsbOverlappedEndpoint, iface.endpoints())
 
     def read(self, idx, length, timeout=None):
@@ -136,6 +146,8 @@ class UsbHost():
         if self._endpoints:
             [ep.stop() for ep in self._endpoints]
         self._endpoints = None
+        if self.dev is not None:
+            usb.util.dispose_resources(self.dev) # Release interface
 
     def __del__(self):
         self.cleanup()
