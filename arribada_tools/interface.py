@@ -98,7 +98,9 @@ class ConfigInterface(object):
 
     def erase_log_file(self):
         cmd = message.ConfigMessage_LOG_ERASE_REQ()
-        resp = self._backend.command_response(cmd, self.timeout)
+        # Could take 30 seconds to erase a large log file so use a
+        # larger timeout period for this command
+        resp = self._backend.command_response(cmd, 30 + self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to LOG_ERASE_REQ')
             raise ExceptionBackendCommsError

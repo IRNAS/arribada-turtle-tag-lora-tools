@@ -48,6 +48,7 @@ class BackendUsb(_Backend):
         resp.wait()
         if resp.status == -1:
             return None
+        # All command responses are guaranteed to fit inside 512 bytes
         resp = self._usb.read(pyusb.EP_MSG_IN, 512, timeout)
         resp.wait()
         if resp.status == -1:
@@ -76,10 +77,11 @@ class BackendUsb(_Backend):
         the data buffer received.
         """
         data = b''
-        while True:
-            resp = self._usb.read(pyusb.EP_MSG_IN, timeout)
+        while length > 0:
+            resp = self._usb.read(pyusb.EP_MSG_IN, min(512, length), timeout)
             resp.wait()
             if resp.status == -1:
                 break
             data = data + resp.buffer
+            length = length - len(resp.buffer)
         return data
