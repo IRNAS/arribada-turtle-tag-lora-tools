@@ -1,5 +1,4 @@
 import argparse
-import time
 import binascii
 import logging
 from arribada_tools import gps_config, ubx, backend, interface
@@ -37,3 +36,4 @@ if msg:
 
 if bridged_backend:
     interface.ConfigInterface(bridged_backend).gps_config(False)
+gps_backend.cleanup()

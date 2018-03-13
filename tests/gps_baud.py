@@ -34,3 +34,4 @@ if bridged_backend:
     cfg = interface.ConfigInterface(backend)
     cfg.write_json_configuration('{"gps": {"uartBaudRate": %u}}' % args.new_baud)
     cfg.gps_config(False)
+gps_backend.cleanup()

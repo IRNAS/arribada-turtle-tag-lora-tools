@@ -31,3 +31,4 @@ cfg.ascii_config_session(ascii_data)
 
 if bridged_backend:
     interface.ConfigInterface(bridged_backend).gps_config(False)
+gps_backend.cleanup()

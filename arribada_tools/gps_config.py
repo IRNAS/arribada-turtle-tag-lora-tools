@@ -39,6 +39,9 @@ class GPSSerialBackend(object):
     def write(self, data):
         self._serial.write(data)
 
+    def cleanup(self):
+        pass
+
 
 class GPSBridgedBackend(object):
     """Use a USB/BLE bridged backend"""
@@ -62,7 +65,10 @@ class GPSBridgedBackend(object):
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to GPS_WRITE_REQ')
             raise ExceptionGPSCommsTimeoutError
-        self._backend.write(data, _timeout)    
+        self._backend.write(data, _timeout)
+
+    def cleanup(self):
+        self._backend.cleanup
 
 
 class GPSConfig(object):

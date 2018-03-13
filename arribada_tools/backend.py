@@ -24,6 +24,9 @@ class _Backend(object):
     def read(self, length, timeout=None):
         pass
 
+    def cleanup(self):
+        pass
+
 
 class BackendBluetooth(_Backend):
 
@@ -85,3 +88,6 @@ class BackendUsb(_Backend):
             data = data + resp.buffer
             length = length - len(resp.buffer)
         return data
+
+    def cleanup(self):
+        self._usb.cleanup()
