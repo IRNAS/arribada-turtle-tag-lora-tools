@@ -103,8 +103,10 @@ class ExceptionUsbDeviceNotFound(Exception):
 class ExceptionUsbDeviceFailedToClaim(Exception):
     pass
 
-EP_MSG_IN = 0
-EP_MSG_OUT = 1
+# Direction is with respect to the host i.e., OUT => write from host to device
+# IN => read from device to host
+EP_MSG_OUT = 0
+EP_MSG_IN = 1
 
 
 class UsbHost():
