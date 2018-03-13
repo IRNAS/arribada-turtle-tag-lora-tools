@@ -49,7 +49,7 @@ class GPSBridgedBackend(object):
     def read(self):
         cmd = message.ConfigMessage_GPS_READ_REQ(512)
         resp = self._backend.command_response(cmd, _timeout)
-        if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
+        if not resp or resp.name != 'GPS_READ_RESP' or resp.error_code:
             logger.error('Bad response to GPS_READ_REQ')
             raise ExceptionGPSCommsTimeoutError
         if (resp.length > 0):

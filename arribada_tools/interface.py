@@ -126,6 +126,10 @@ class ConfigInterface(object):
         if length != len(data):
             logger.error('Failed to send all firmware data bytes (%u/%u)', length, len(data))
             raise ExceptionBackendCommsError
+        resp = self._backend.command_response(cmd, self.timeout)
+        if not resp or resp.name != 'FW_SEND_IMAGE_COMPLETE_IND' or resp.error_code:
+            logger.error('Did not receive valid FW_SEND_IMAGE_COMPLETE_IND')
+            raise ExceptionBackendCommsError
         cmd = message.ConfigMessage_FW_APPLY_IMAGE_REQ(image_type=image_type)
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
