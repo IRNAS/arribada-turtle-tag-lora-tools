@@ -17,7 +17,7 @@ timeout = None
 timeAtStart = time.time()
 for i in range(0, numOfAttempts):
     stringToSend = str(i)
-    host.write(pyusb.EP_MSG_IN, stringToSend, timeout).wait() # Send test string
+    host.write(pyusb.EP_MSG_OUT, stringToSend, timeout).wait() # Send test string
     event = host.read(pyusb.EP_MSG_IN, len(stringToSend), timeout) # Prepare to receive
     event.wait() # Receive data
     stringReceived = str(bytearray(event.buffer))
