@@ -127,7 +127,16 @@ class ConfigMessage_CFG_READ_RESP(ConfigMessage):
     name = 'CFG_READ_RESP'
 
     def __init__(self, **kwargs):
-        ConfigMessage.__init__(self, b'HI', ['error_code', 'length'], **kwargs)
+        ConfigMessage.__init__(self, b'BI', ['error_code', 'length'], **kwargs)
+
+
+class ConfigMessage_CFG_WRITE_CNF(ConfigMessage):
+
+    cmd = 9
+    name = 'CFG_WRITE_CNF'
+
+    def __init__(self, **kwargs):
+        ConfigMessage.__init__(self, b'B', ['error_code'], **kwargs)
 
 
 class ConfigMessage_CFG_WRITE_REQ(ConfigMessage):
@@ -174,7 +183,7 @@ class ConfigMessage_CFG_UNPROTECT_REQ(ConfigMessageHeader):
 
 class ConfigMessage_GPS_WRITE_REQ(ConfigMessage):
 
-    cmd = 9
+    cmd = 10
     name = 'GPS_WRITE_REQ'
 
     def __init__(self, **kwargs):
@@ -183,7 +192,7 @@ class ConfigMessage_GPS_WRITE_REQ(ConfigMessage):
 
 class ConfigMessage_GPS_READ_REQ(ConfigMessage):
 
-    cmd = 10
+    cmd = 11
     name = 'GPS_READ_REQ'
 
     def __init__(self, **kwargs):
@@ -192,7 +201,7 @@ class ConfigMessage_GPS_READ_REQ(ConfigMessage):
 
 class ConfigMessage_GPS_READ_RESP(ConfigMessage):
 
-    cmd = 11
+    cmd = 12
     name = 'GPS_READ_RESP'
 
     def __init__(self, **kwargs):
@@ -201,7 +210,7 @@ class ConfigMessage_GPS_READ_RESP(ConfigMessage):
 
 class ConfigMessage_GPS_CONFIG_REQ(ConfigMessage):
 
-    cmd = 12
+    cmd = 13
     name = 'GPS_CONFIG_REQ'
 
     def __init__(self, **kwargs):
@@ -210,7 +219,7 @@ class ConfigMessage_GPS_CONFIG_REQ(ConfigMessage):
 
 class ConfigMessage_BLE_CONFIG_REQ(ConfigMessage):
 
-    cmd = 13
+    cmd = 14
     name = 'BLE_CONFIG_REQ'
 
     def __init__(self, **kwargs):
@@ -219,7 +228,7 @@ class ConfigMessage_BLE_CONFIG_REQ(ConfigMessage):
 
 class ConfigMessage_BLE_WRITE_REQ(ConfigMessage):
 
-    cmd = 14
+    cmd = 15
     name = 'BLE_WRITE_REQ'
 
     def __init__(self, **kwargs):
@@ -228,7 +237,7 @@ class ConfigMessage_BLE_WRITE_REQ(ConfigMessage):
 
 class ConfigMessage_BLE_READ_REQ(ConfigMessage):
 
-    cmd = 15
+    cmd = 16
     name = 'BLE_READ_REQ'
 
     def __init__(self, **kwargs):
@@ -237,13 +246,13 @@ class ConfigMessage_BLE_READ_REQ(ConfigMessage):
 
 class ConfigMessage_STATUS_REQ(ConfigMessageHeader):
 
-    cmd = 16
+    cmd = 17
     name = 'STATUS_REQ'
 
 
 class ConfigMessage_STATUS_RESP(ConfigMessage):
 
-    cmd = 17
+    cmd = 18
     name = 'STATUS_RESP'
 
     def __init__(self, **kwargs):
@@ -252,17 +261,17 @@ class ConfigMessage_STATUS_RESP(ConfigMessage):
 
 class ConfigMessage_FW_SEND_IMAGE_REQ(ConfigMessage):
 
-    cmd = 18
+    cmd = 19
     name = 'FW_SEND_IMAGE_REQ'
 
     def __init__(self, **kwargs):
         ConfigMessage.__init__(self, b'BII', ['image_type', 'length', 'crc',], **kwargs)
 
 
-class ConfigMessage_FW_SEND_IMAGE_COMPLETE_IND(GenericResponse):
+class ConfigMessage_FW_SEND_IMAGE_COMPLETE_CNF(GenericResponse):
 
-    cmd = 19
-    name = 'FW_SEND_IMAGE_COMPLETE_IND'
+    cmd = 20
+    name = 'FW_SEND_IMAGE_COMPLETE_CNF'
 
     def __init__(self, **kwargs):
         ConfigMessage.__init__(self, b'B', ['error_code'], **kwargs)
@@ -270,7 +279,7 @@ class ConfigMessage_FW_SEND_IMAGE_COMPLETE_IND(GenericResponse):
 
 class ConfigMessage_FW_APPLY_IMAGE_REQ(ConfigMessage):
 
-    cmd = 20
+    cmd = 21
     name = 'FW_APPLY_IMAGE_REQ'
 
     def __init__(self, **kwargs):
@@ -279,7 +288,7 @@ class ConfigMessage_FW_APPLY_IMAGE_REQ(ConfigMessage):
 
 class ConfigMessage_RESET_REQ(ConfigMessage):
 
-    cmd = 21
+    cmd = 22
     name = 'RESET_REQ'
 
     def __init__(self, **kwargs):
@@ -288,13 +297,13 @@ class ConfigMessage_RESET_REQ(ConfigMessage):
 
 class ConfigMessage_BATTERY_STATUS_REQ(ConfigMessageHeader):
 
-    cmd = 22
+    cmd = 23
     name = 'BATTERY_STATUS_REQ'
 
 
 class ConfigMessage_BATTERY_STATUS_RESP(ConfigMessage):
 
-    cmd = 23
+    cmd = 24
     name = 'BATTERY_STATUS_RESP'
 
     def __init__(self, **kwargs):
@@ -303,7 +312,7 @@ class ConfigMessage_BATTERY_STATUS_RESP(ConfigMessage):
 
 class ConfigMessage_LOG_CREATE_REQ(ConfigMessage):
 
-    cmd = 24
+    cmd = 25
     name = 'LOG_CREATE_REQ'
 
     def __init__(self, **kwargs):
@@ -333,13 +342,13 @@ class ConfigMessage_LOG_CREATE_REQ(ConfigMessage):
 
 class ConfigMessage_LOG_ERASE_REQ(ConfigMessageHeader):
 
-    cmd = 25
+    cmd = 26
     name = 'LOG_ERASE_REQ'
 
 
 class ConfigMessage_LOG_READ_REQ(ConfigMessage):
 
-    cmd = 26
+    cmd = 27
     name = 'LOG_READ_REQ'
 
     def __init__(self, **kwargs):
@@ -348,7 +357,7 @@ class ConfigMessage_LOG_READ_REQ(ConfigMessage):
 
 class ConfigMessage_LOG_READ_RESP(ConfigMessage):
 
-    cmd = 27
+    cmd = 28
     name = 'LOG_READ_RESP'
 
     def __init__(self, **kwargs):

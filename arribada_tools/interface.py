@@ -37,6 +37,10 @@ class ConfigInterface(object):
         if length != len(config_data):
             logger.error('Failed to send all configuration bytes (%u/%u)', length, len(config_data))
             raise ExceptionBackendCommsError
+        resp = self._backend.command_response(None, self.timeout)
+        if not resp or resp.name != 'CFG_WRITE_CNF' or resp.error_code:
+            logger.error('Did not receive valid CFG_WRITE_CNF')
+            raise ExceptionBackendCommsError
 
     def read_json_configuration(self, tag=0xFFFF):
         cmd = message.ConfigMessage_CFG_READ_REQ(cfg_tag=tag)
@@ -126,9 +130,9 @@ class ConfigInterface(object):
         if length != len(data):
             logger.error('Failed to send all firmware data bytes (%u/%u)', length, len(data))
             raise ExceptionBackendCommsError
-        resp = self._backend.command_response(cmd, self.timeout)
-        if not resp or resp.name != 'FW_SEND_IMAGE_COMPLETE_IND' or resp.error_code:
-            logger.error('Did not receive valid FW_SEND_IMAGE_COMPLETE_IND')
+        resp = self._backend.command_response(None, self.timeout)
+        if not resp or resp.name != 'FW_SEND_IMAGE_COMPLETE_CNF' or resp.error_code:
+            logger.error('Did not receive valid FW_SEND_IMAGE_COMPLETE_CNF')
             raise ExceptionBackendCommsError
         cmd = message.ConfigMessage_FW_APPLY_IMAGE_REQ(image_type=image_type)
         resp = self._backend.command_response(cmd, self.timeout)

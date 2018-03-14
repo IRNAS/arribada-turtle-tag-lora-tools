@@ -43,14 +43,15 @@ class BackendUsb(_Backend):
             raise ExceptionBackendNotFound
 
     def command_response(self, command, timeout=None):
-        """Send a command over USB and wait for a response to come back.
+        """Send a command (optionally) over USB and wait for a response to come back.
         The input command is a message object and any response shall be
         first decoded to a response message object.
         """
-        resp = self._usb.write(pyusb.EP_MSG_OUT, command.pack(), timeout)
-        resp.wait()
-        if resp.status == -1:
-            return None
+        if command:
+            resp = self._usb.write(pyusb.EP_MSG_OUT, command.pack(), timeout)
+            resp.wait()
+            if resp.status == -1:
+                return None
         # All command responses are guaranteed to fit inside 512 bytes
         resp = self._usb.read(pyusb.EP_MSG_IN, 512, timeout)
         resp.wait()
