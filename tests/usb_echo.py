@@ -1,9 +1,12 @@
 # This is a rudimentary USB to STM32 test script that sends data and looks for the same data being returned
 # The client must send any received data back
 
+import logging
 import time
 import sys
 from arribada_tools import pyusb
+
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG) # Print logging output to stdout
 
 try:
     host = pyusb.UsbHost()
@@ -11,8 +14,8 @@ except:
     print("Unexpected error: %s", sys.exc_info()[0])
     quit()
 
-numOfAttempts = 1000
-timeout = None
+numOfAttempts = 100000
+timeout = 10000000000
 
 timeAtStart = time.time()
 for i in range(0, numOfAttempts):
