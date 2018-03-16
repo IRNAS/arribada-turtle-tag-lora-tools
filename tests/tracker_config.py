@@ -78,7 +78,7 @@ try:
         print cfg.get_status()
     
     if args.battery:
-        cfg.get_battery_status()
+        print cfg.get_battery_status()
     
     if args.firmware_type and args.firmware:
         cfg.fw_upgrade(args.firmware_type, args.firmware.read())

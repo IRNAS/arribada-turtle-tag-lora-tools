@@ -11,15 +11,18 @@ class ExceptionMessageInvalidValue(Exception):
 
 
 def decode(data):
+
     """Attempt to decode a message from an input data buffer"""
     hdr = ConfigMessageHeader()
     if (len(data) < hdr.header_length):
         return (None, data)
 
-    # Find first sync byte and decode from that position
-    pos = data.find(ConfigMessageHeader.sync)
-    if pos < 0:
+    # If there's no sync byte return
+    if ConfigMessageHeader.sync not in data:
         return (None, data)
+
+    # Find location of first sync byte and decode from that position
+    pos = data.index(ConfigMessageHeader.sync)
 
     # Unpack message header at SYNC position
     hdr.unpack(data[pos:])
@@ -29,7 +32,7 @@ def decode(data):
     for i in inspect.getmembers(sys.modules[__name__], inspect.isclass):
         cls = i[1]
         if issubclass(cls, ConfigMessageHeader) and cls not in unused_cls and \
-            msg.cmd == cls.cmd:
+            hdr.cmd == cls.cmd:
             msg = cls()
             break
 
@@ -46,7 +49,7 @@ def convert_to_dict(obj):
     ignore = ['error_code', 'cmd', 'sync']
     for i in obj._args:
         if i not in ignore:
-            d[i] = obj.i
+            d[i] = getattr(obj, i)
     return d
 
 
@@ -86,10 +89,10 @@ class _Blob(object):
 
 class ConfigMessageHeader(_Blob):
     """Configuration message header"""
-    sync = b'\x7E'
+    sync = 0x7E
 
     def __init__(self, bytes_to_follow=0):
-        _Blob.__init__(self, b'cB', ['sync', 'cmd'])
+        _Blob.__init__(self, b'BB', ['sync', 'cmd'])
         self.header_length = struct.calcsize(self._fmt)
         self.length = self.header_length + bytes_to_follow
 
