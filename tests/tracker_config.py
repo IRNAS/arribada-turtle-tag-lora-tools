@@ -16,6 +16,7 @@ parser.add_argument('--restore', action='store_true', required=False)
 parser.add_argument('--erase', action='store_true', required=False)
 parser.add_argument('--erase_log', action='store_true', required=False)
 parser.add_argument('--create_log', required=False)
+parser.add_argument('--reset', required=False)
 parser.add_argument('--protect', action='store_true', required=False)
 parser.add_argument('--unprotect', action='store_true', required=False)
 parser.add_argument('--setdatetime', required=False)
@@ -27,7 +28,7 @@ args = parser.parse_args()
 comms_backend = None
 
 try:
-
+    
     if args.debug:
         logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.DEBUG)
     
@@ -79,6 +80,9 @@ try:
     
     if args.battery:
         print cfg.get_battery_status()
+    
+    if args.reset:
+        cfg.reset(args.reset)
     
     if args.firmware_type and args.firmware:
         cfg.fw_upgrade(args.firmware_type, args.firmware.read())

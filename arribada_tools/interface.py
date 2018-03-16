@@ -140,8 +140,8 @@ class ConfigInterface(object):
             logger.error('Bad response to FW_APPLY_IMAGE_REQ')
             raise ExceptionBackendCommsError
 
-    def reset(self):
-        cmd = message.ConfigMessage_RESET_REQ()
+    def reset(self, reset_type):
+        cmd = message.ConfigMessage_RESET_REQ(reset_type=int(reset_type))
         resp = self._backend.command_response(cmd, self.timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to RESET_REQ')
