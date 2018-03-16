@@ -89,7 +89,7 @@ class ConfigMessageHeader(_Blob):
     sync = b'\x7E'
 
     def __init__(self, bytes_to_follow=0):
-        _Blob.__init__(self, b'B', ['sync', 'cmd'])
+        _Blob.__init__(self, b'cB', ['sync', 'cmd'])
         self.header_length = struct.calcsize(self._fmt)
         self.length = self.header_length + bytes_to_follow
 
