@@ -1,5 +1,6 @@
 import pyusb
 import message
+from array import *
 
 
 class ExceptionBackendNotFound(Exception):
@@ -96,7 +97,7 @@ class BackendUsb(_Backend):
             timeout = timeout * 1000 # Scale timeout to milliseconds
             timeout = int(timeout)
 
-        data = b''
+        data = array('B', [])
         while length > 0:
             resp = self._usb.read(pyusb.EP_MSG_IN, min(512, length), timeout)
             resp.wait()
