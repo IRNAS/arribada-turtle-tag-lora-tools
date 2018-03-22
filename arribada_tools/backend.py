@@ -83,8 +83,8 @@ class BackendUsb(_Backend):
             resp.wait()
             if resp.status <= 0:
                 break
-            data = data[resp.length:]
-            size = size + resp.length
+            data = data[resp.status:]
+            size = size + resp.status
         return size
 
     def read(self, length, timeout=None):
