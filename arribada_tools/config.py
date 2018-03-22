@@ -293,7 +293,7 @@ class ConfigItem_RTC_CurrentDateTime(ConfigItem):
             del kwargs['dateTime']
         else:
             self.dateTime = None
-        ConfigItem.__init__(self, b'BBIBBB', self.params, **kwargs)
+        ConfigItem.__init__(self, b'BBHBBB', self.params, **kwargs)
 
     def pack(self):
         if self.dateTime:
