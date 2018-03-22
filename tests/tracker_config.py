@@ -61,7 +61,7 @@ try:
         cfg.write_json_configuration(args.write.read())
     
     if args.setdatetime:
-        cfg.write_json_configuration('"rtc": { "dateTime": "%s"}' % args.datetime)
+        cfg.write_json_configuration('{"rtc": { "dateTime": "%s"}}' % args.setdatetime)
     
     if args.getdatetime:
         print cfg.read_json_configuration(tag=config.ConfigItem_RTC_CurrentDateTime.tag)
