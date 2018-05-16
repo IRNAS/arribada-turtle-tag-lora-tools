@@ -116,7 +116,7 @@ def json_dumps(objects):
             h = h[j]
         for j in i.json_params:
             h[j] = getattr(i, j)
-    return json.dumps(obj_hash)
+    return json.dumps(obj_hash, indent=4, sort_keys=True)
 
 
 def json_loads(text):
@@ -188,6 +188,7 @@ class ConfigItem_System_DeviceIdentifier(ConfigItem):
     tag = 0x0400
     path = 'system'
     params = ['deviceIdentifier']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'8s', self.params, **kwargs)
@@ -268,7 +269,7 @@ class ConfigItem_GPS_UARTBaudRate(ConfigItem):
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+        ConfigItem.__init__(self, b'L', self.params, **kwargs)
 
 
 class ConfigItem_RTC_SyncToGPSEnable(ConfigItem):
@@ -408,7 +409,7 @@ class ConfigItem_Logging_DateTimeStampEnable(ConfigItem):
 
 
 class ConfigItem_Logging_HighResolutionTimerEnable(ConfigItem):
-    tag = 0x0106
+    tag = 0x0107
     path = 'logging'
     params = ['highResolutionTimerEnable']
     json_params = params
@@ -444,7 +445,7 @@ class ConfigItem_AXL_SampleRate(ConfigItem):
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
 class ConfigItem_AXL_HighThreshold(ConfigItem):
@@ -454,13 +455,14 @@ class ConfigItem_AXL_HighThreshold(ConfigItem):
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
 class ConfigItem_AXL_Mode(ConfigItem):
     tag = 0x0204
     path = 'accelerometer'
     params = ['mode']
+    json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
@@ -504,7 +506,7 @@ class ConfigItem_PressureSensor_SampleRate(ConfigItem):
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
 class ConfigItem_PressureSensor_LowThreshold(ConfigItem):
@@ -514,16 +516,17 @@ class ConfigItem_PressureSensor_LowThreshold(ConfigItem):
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
 class ConfigItem_PressureSensor_HighThreshold(ConfigItem):
     tag = 0x0303
     path = 'pressure_sensor'
     params = ['highThreshold']
+    json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
 class ConfigItem_PressureSensor_Mode(ConfigItem):
@@ -582,7 +585,7 @@ class ConfigItem_TempSensor_SampleRate(ConfigItem):
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
 class ConfigItem_TempSensor_LowThreshold(ConfigItem):
@@ -592,7 +595,7 @@ class ConfigItem_TempSensor_LowThreshold(ConfigItem):
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
 class ConfigItem_TempSensor_HighThreshold(ConfigItem):
@@ -602,7 +605,7 @@ class ConfigItem_TempSensor_HighThreshold(ConfigItem):
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
 class ConfigItem_TempSensor_Mode(ConfigItem):
@@ -717,7 +720,7 @@ class ConfigItem_BLE_BeaconAdvertisingInterval(ConfigItem):
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
 class ConfigItem_BLE_BeaconAdvertisingConfiguration(ConfigItem):
