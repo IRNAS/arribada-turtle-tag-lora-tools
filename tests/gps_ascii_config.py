@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 from arribada_tools import gps_config, backend, interface
 
 parser = argparse.ArgumentParser()
@@ -31,4 +32,6 @@ cfg.ascii_config_session(ascii_data)
 
 if bridged_backend:
     interface.ConfigInterface(bridged_backend).gps_config(False)
-gps_backend.cleanup()
+
+if gps_backend:
+    gps_backend.cleanup()

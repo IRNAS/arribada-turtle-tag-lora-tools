@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 from arribada_tools import gps_config, backend, interface
 
 parser = argparse.ArgumentParser()
@@ -9,7 +10,6 @@ parser.add_argument('--uuid', dest='bluetooth_uuid', required=False)
 parser.add_argument('--file', type=argparse.FileType('rb'), required=True)
 parser.add_argument('--debug', action='store_true', required=False)
 args = parser.parse_args()
-
 
 if args.debug:
     logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.DEBUG)
@@ -33,4 +33,6 @@ cfg.mga_ano_session(mga_ano_data)
 
 if bridged_backend:
     interface.ConfigInterface(bridged_backend).gps_config(False)
-gps_backend.cleanup()
+
+if gps_backend:
+    gps_backend.cleanup()
