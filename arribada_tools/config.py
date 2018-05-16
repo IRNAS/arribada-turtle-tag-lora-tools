@@ -127,6 +127,8 @@ def json_loads(text):
     for i in flat:
         (path, param, cls) = _findclass(i)
         if cls:
+            if len(cls.params) == 1:
+                path = i
             if path not in obj:
                 obj[path] = cls()
             setattr(obj[path], param, flat[i])
