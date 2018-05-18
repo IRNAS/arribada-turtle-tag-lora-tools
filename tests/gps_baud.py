@@ -31,7 +31,12 @@ gps_backend.write(msg)
 # If we are bridged then we need to send an updated UART baud rate
 # to ensure that the GPS/MCU configuration remains in sync
 if bridged_backend:
-    cfg = interface.ConfigInterface(backend)
+    cfg = interface.ConfigInterface(bridged_backend)
     cfg.write_json_configuration('{"gps": {"uartBaudRate": %u}}' % args.new_baud)
     cfg.gps_config(False)
-gps_backend.cleanup()
+
+if bridged_backend:
+    bridged_backend.cleanup()
+
+if gps_backend:
+    gps_backend.cleanup()

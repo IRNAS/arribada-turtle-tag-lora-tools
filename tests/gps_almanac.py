@@ -34,5 +34,8 @@ cfg.mga_ano_session(mga_ano_data)
 if bridged_backend:
     interface.ConfigInterface(bridged_backend).gps_config(False)
 
+if bridged_backend:
+    bridged_backend.cleanup()
+
 if gps_backend:
     gps_backend.cleanup()

@@ -1,6 +1,6 @@
 import struct
 import binascii
-
+from array import array
 
 _UBX_MIN_MESSAGE_LEN = 8
 
@@ -219,7 +219,12 @@ def _checksum(class_and_payload):
 
 
 def ubx_extract(data):
-    pos = data.find(_Sync.SYNC1)
+    if type(data) == array:
+        data = "".join(map(chr, data))
+    try:
+        pos = data.index(_Sync.SYNC1)
+    except:
+        return (b'', b'')
     if pos < 0:
         return (b'', b'')
     if (len(data) - pos - _UBX_MIN_MESSAGE_LEN) < 0:

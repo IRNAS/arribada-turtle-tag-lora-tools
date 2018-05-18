@@ -4,6 +4,7 @@ import logging
 import serial
 import time
 import binascii
+from array import *
 
 
 logger = logging.getLogger(__name__)
@@ -49,8 +50,9 @@ class GPSBridgedBackend(object):
     def __init__(self, backend):
         self._backend = backend
 
-    def read(self):
-        cmd = message.ConfigMessage_GPS_READ_REQ(length=512)
+    def read(self, length=512):
+        time.sleep(0.15)
+        cmd = message.ConfigMessage_GPS_READ_REQ(length=length)
         resp = self._backend.command_response(cmd, _timeout)
         if not resp or resp.name != 'GPS_READ_RESP' or resp.error_code:
             logger.error('Bad response to GPS_READ_REQ')
@@ -60,6 +62,7 @@ class GPSBridgedBackend(object):
         return b''
 
     def write(self, data):
+        time.sleep(0.15)
         cmd = message.ConfigMessage_GPS_WRITE_REQ(length=len(data));
         resp = self._backend.command_response(cmd, _timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
@@ -78,10 +81,10 @@ class GPSConfig(object):
         self._backend = gps_backend
 
     def _wait_for_ack(self):
-        data = b''
+        data = array('B', [])
         retries = 300
         while retries > 0:
-            data = data + self._backend.read()
+            data = array('B', data) + array('B', self._backend.read())
             while True:
                 (msg, data) = ubx.ubx_extract(data)
                 if not msg:
@@ -97,10 +100,10 @@ class GPSConfig(object):
         raise ExceptionGPSCommsTimeoutError
 
     def _wait_for_mga_flash_ack(self, expected_sequence):
-        data = b''
+        data = array('B', [])
         retries = 500
         while retries > 0:
-            data = data + self._backend.read()
+            data = array('B', data) + array('B', self._backend.read())
             while True:
                 (msg, data) = ubx.ubx_extract(data)
                 if not msg:
