@@ -1,5 +1,6 @@
 import argparse
 import logging
+import binascii
 from arribada_tools import gps_config, ubx, backend, interface
 
 parser = argparse.ArgumentParser()
@@ -26,6 +27,7 @@ else:
     interface.ConfigInterface(bridged_backend).gps_config(True)
 
 msg = ubx.ubx_cfg_uart(args.new_baud)
+logging.debug('TX: %s: len=%u: %s', ubx.ubx_to_string(msg), len(msg), binascii.hexlify(msg))
 gps_backend.write(msg)
 
 # If we are bridged then we need to send an updated UART baud rate
@@ -33,9 +35,15 @@ gps_backend.write(msg)
 if bridged_backend:
     cfg = interface.ConfigInterface(bridged_backend)
     cfg.write_json_configuration('{"gps": {"uartBaudRate": %u}}' % args.new_baud)
-    cfg.gps_config(False)
+    cfg.save_configuration() # Save this new Baudrate to the stm32 FLASH
+
+# Save the updated baudrate to m8n flash
+msg = ubx.ubx_cfg_save_flash()
+logging.debug('TX: %s: len=%u: %s', ubx.ubx_to_string(msg), len(msg), binascii.hexlify(msg))
+gps_backend.write(msg)
 
 if bridged_backend:
+    cfg.gps_config(False) # Turn off GPS bridging
     bridged_backend.cleanup()
 
 if gps_backend:

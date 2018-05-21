@@ -51,7 +51,7 @@ class GPSBridgedBackend(object):
         self._backend = backend
 
     def read(self, length=512):
-        time.sleep(0.15)
+        #time.sleep(0.15)
         cmd = message.ConfigMessage_GPS_READ_REQ(length=length)
         resp = self._backend.command_response(cmd, _timeout)
         if not resp or resp.name != 'GPS_READ_RESP' or resp.error_code:
@@ -62,7 +62,7 @@ class GPSBridgedBackend(object):
         return b''
 
     def write(self, data):
-        time.sleep(0.15)
+        #time.sleep(0.15)
         cmd = message.ConfigMessage_GPS_WRITE_REQ(length=len(data));
         resp = self._backend.command_response(cmd, _timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
