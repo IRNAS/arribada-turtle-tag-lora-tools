@@ -1,6 +1,6 @@
 import pyusb
 import message
-from array import *
+from ble import BluetoothTracker
 
 
 class ExceptionBackendNotFound(Exception):
@@ -32,7 +32,13 @@ class _Backend(object):
 class BackendBluetooth(_Backend):
 
     def __init__(self, uuid=None):
-        raise ExceptionBackendNotImplemented
+        self._ble = BluetoothTracker(uuid)
+
+    def write(self, data, timeout=None):
+        self._ble.write(data)
+
+    def read(self, length, timeout=None):
+        self._ble.read(timeout)
 
 
 class BackendUsb(_Backend):
