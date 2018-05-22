@@ -1,8 +1,10 @@
+import os
 from bluepy.btle import Scanner
 
 SCAN_NAME = 'Arribada_Tracker'
+HCI_DEV = 0 if 'HCI_DEV' not in os.environ else int(os.environ['HCI_DEV'])
 
-scanner = Scanner()
+scanner = Scanner(HCI_DEV)
 devices = scanner.scan(1)
 
 device_list = []

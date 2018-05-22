@@ -1,5 +1,6 @@
 import sys
 import struct
+import os
 from bluepy.btle import UUID, Peripheral, DefaultDelegate
 
 config_service_uuid = UUID('04831523-6c9d-6ca9-5d41-03ad4fff4abb')
@@ -8,6 +9,8 @@ config_char_uuid = UUID('04831524-6c9d-6ca9-5d41-03ad4fff4abb')
 if len(sys.argv) != 2:
     print "Fatal, must pass device address:", sys.argv[0], "<device address="">"
     sys.exit()
+
+HCI_DEV = 0 if 'HCI_DEV' not in os.environ else int(os.environ['HCI_DEV'])
 
 
 class MyDelegate(DefaultDelegate):
@@ -24,7 +27,7 @@ def notifications_enable(p, char):
             p.writeCharacteristic(ccc_handle, struct.pack('<bb', 0x01, 0x00))
             break
 
-p = Peripheral(sys.argv[1], "random")
+p = Peripheral(sys.argv[1], "random", HCI_DEV)
 #p.setDelegate(MyDelegate())
 
 config_service = p.getServiceByUUID(config_service_uuid)
@@ -33,6 +36,6 @@ config_char = config_service.getCharacteristics(config_char_uuid)[0]
 
 try:
     while True:
-        config_char.write(' ' * 20)
+        config_char.write(' ' * 244)
 finally:
     p.disconnect()

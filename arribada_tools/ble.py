@@ -1,9 +1,12 @@
 import struct
+import os
 from bluepy.btle import UUID, Peripheral, DefaultDelegate
 
 config_service_uuid = UUID('04831523-6c9d-6ca9-5d41-03ad4fff4abb')
 config_char_uuid = UUID('04831524-6c9d-6ca9-5d41-03ad4fff4abb')
 MAX_PACKET_SIZE = 20
+
+HCI_DEV = 0 if 'HCI_DEV' not in os.environ else int(os.environ['HCI_DEV'])
 
 
 class Buffer():
@@ -25,8 +28,8 @@ class Buffer():
 class MyDelegate(DefaultDelegate):
 
     def __init__(self, buf):
-        self._buffer = buf
         DefaultDelegate.__init__(self)
+        self._buffer = buf
 
     def handleNotification(self, cHandle, data):
         self._buffer.write(data)
@@ -43,8 +46,8 @@ def notifications_enable(p, char):
 class BluetoothTracker():
     def __init__(self, uuid):
         self._buffer = Buffer()
-        self._periph = Peripheral(uuid, 'random')
-        self._periph.setDelegate(MyDelegate())
+        self._periph = Peripheral(uuid, 'random', HCI_DEV)
+        self._periph.setDelegate(MyDelegate(self._buffer))
         self._config_service = self._periph.getServiceByUUID(config_service_uuid)
         self._config_char = self._config_service.getCharacteristics(config_char_uuid)[0]
         notifications_enable(self._periph, self._config_char)

@@ -87,7 +87,7 @@ try:
     if args.firmware_type and args.firmware:
         cfg.fw_upgrade(args.firmware_type, args.firmware.read())
 except:
-    print "Unexpected error: %s", sys.exc_info()[0]
+    print "Unexpected error: %s" % sys.exc_info()[0]
 
 if comms_backend:
     comms_backend.cleanup()
