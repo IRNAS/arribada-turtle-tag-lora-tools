@@ -21,6 +21,7 @@ for i in objects:
     else:
         d = {}
         d[i.name] = {}
-        for j in i.fields:
-            d[i.name][j] = getattr(i, j)
+        if hasattr(i, 'fields'):
+            for j in i.fields:
+                d[i.name][j] = getattr(i, j)
         print d

@@ -185,10 +185,10 @@ class LogItem_AXL_XYZ(LogItem):
 class LogItem_Time_DateTime(LogItem):
     tag = 0x04
     name = 'DateTime'
-    fields = ['day', 'dayOfWeek', 'month', 'year', 'hours', 'minutes', 'seconds']
+    fields = ['year', 'month', 'day', 'hours', 'minutes', 'seconds']
 
     def __init__(self, **kwargs):
-        LogItem.__init__(self, b'3BH3B', self.fields, **kwargs)
+        LogItem.__init__(self, b'H5B', self.fields, **kwargs)
 
 
 class LogItem_Time_HighResTimer(LogItem):
@@ -201,9 +201,19 @@ class LogItem_Time_HighResTimer(LogItem):
 
 
 class LogItem_Temperature_Temperature(LogItem):
-    tag = 0x05
+    tag = 0x06
     name = 'Temperature'
     fields = ['temperature']
 
     def __init__(self, **kwargs):
         LogItem.__init__(self, b'H', self.fields, **kwargs)
+
+
+class LogItem_Builtin_Surfaced(LogItem):
+    tag = 0x07
+    name = 'Surfaced'
+
+
+class LogItem_Builtin_Submerged(LogItem):
+    tag = 0x08
+    name = 'Submerged'
