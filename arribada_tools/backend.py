@@ -1,6 +1,6 @@
 import pyusb
 import message
-import array
+from array import array
 from ble import BluetoothTracker
 
 
