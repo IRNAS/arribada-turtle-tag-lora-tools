@@ -384,18 +384,8 @@ class ConfigItem_Logging_Enable(ConfigItem):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
 
 
-class ConfigItem_Logging_BytesWritten(ConfigItem):
-    tag = 0x0101
-    path = 'logging'
-    params = ['bytesWritten']
-    json_params = params
-
-    def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'L', self.params, **kwargs)
-
-
 class ConfigItem_Logging_FileSize(ConfigItem):
-    tag = 0x0102
+    tag = 0x0101
     path = 'logging'
     params = ['fileSize']
     json_params = params
@@ -405,7 +395,7 @@ class ConfigItem_Logging_FileSize(ConfigItem):
 
 
 class ConfigItem_Logging_FileType(ConfigItem):
-    tag = 0x0103
+    tag = 0x0102
     path = 'logging'
     params = ['fileType']
     json_params = params
@@ -436,7 +426,7 @@ class ConfigItem_Logging_FileType(ConfigItem):
 
 
 class ConfigItem_Logging_GroupSensorReadingsEnable(ConfigItem):
-    tag = 0x0104
+    tag = 0x0103
     path = 'logging'
     params = ['groupSensorReadingsEnable']
     json_params = params
@@ -446,7 +436,7 @@ class ConfigItem_Logging_GroupSensorReadingsEnable(ConfigItem):
 
 
 class ConfigItem_Logging_StartEndSyncEnable(ConfigItem):
-    tag = 0x0105
+    tag = 0x0104
     path = 'logging'
     params = ['startEndSyncEnable']
     json_params = params
@@ -456,7 +446,7 @@ class ConfigItem_Logging_StartEndSyncEnable(ConfigItem):
 
 
 class ConfigItem_Logging_DateTimeStampEnable(ConfigItem):
-    tag = 0x0106
+    tag = 0x0105
     path = 'logging'
     params = ['dateTimeStampEnable']
     json_params = params
@@ -466,7 +456,7 @@ class ConfigItem_Logging_DateTimeStampEnable(ConfigItem):
 
 
 class ConfigItem_Logging_HighResolutionTimerEnable(ConfigItem):
-    tag = 0x0107
+    tag = 0x0106
     path = 'logging'
     params = ['highResolutionTimerEnable']
     json_params = params
