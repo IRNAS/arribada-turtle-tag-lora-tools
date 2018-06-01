@@ -244,10 +244,12 @@ class ConfigItem_GPS_Mode(ConfigItem):
 
     def pack(self):
         mode = self.mode
-        if self.mode == 'PERIODIC':
+        if self.mode == 'SWITCH_TRIGGERED':
             self.mode = 0
-        elif self.mode == 'TRIGGERED':
+        elif self.mode == 'SCHEDULED':
             self.mode = 1
+        elif self.mode == 'HYBRID':
+            self.mode = 2
         else:
             raise ExceptionConfigInvalidValue
         data = ConfigItem.pack(self)
@@ -257,9 +259,11 @@ class ConfigItem_GPS_Mode(ConfigItem):
     def unpack(self, data):
         ConfigItem.unpack(self, data)
         if (self.mode == 0):
-            self.mode = 'PERIODIC'
+            self.mode = 'SWITCH_TRIGGERED'
         elif (self.mode == 1):
-            self.mode = 'TRIGGERED'
+            self.mode = 'SCHEDULED'
+        elif (self.mode == 2):
+            self.mode = 'HYBRID'
         else:
             self.mode = 'UNKNOWN'
 
@@ -272,6 +276,56 @@ class ConfigItem_GPS_UARTBaudRate(ConfigItem):
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'L', self.params, **kwargs)
+
+
+class ConfigItem_GPS_ScheduledAquisitionInterval(ConfigItem):
+    tag = 0x0004
+    path = 'gps'
+    params = ['scheduledAquisitionInterval']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
+class ConfigItem_GPS_MaximumAquisitionTime(ConfigItem):
+    tag = 0x0005
+    path = 'gps'
+    params = ['maximumAquisitionTime']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
+class ConfigItem_GPS_ScheduledAquisitionNoFixTimeout(ConfigItem):
+    tag = 0x0006
+    path = 'gps'
+    params = ['scheduledAquisitionNoFixTimeout']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
+class ConfigItem_saltwater_switch_LogEnable(ConfigItem):
+    tag = 0x0800
+    path = 'saltwater_switch'
+    params = ['logEnable']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'?', self.params, **kwargs)
+
+
+class ConfigItem_saltwater_switch_HysteresisPeriod(ConfigItem):
+    tag = 0x0801
+    path = 'saltwater_switch'
+    params = ['hysteresisPeriod']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
 class ConfigItem_RTC_SyncToGPSEnable(ConfigItem):
@@ -318,6 +372,7 @@ class ConfigItem_RTC_CurrentDateTime(ConfigItem):
                      minute=self.minutes,
                      second=self.seconds)
         self.dateTime = d.ctime()
+
 
 class ConfigItem_Logging_Enable(ConfigItem):
     tag = 0x0100
