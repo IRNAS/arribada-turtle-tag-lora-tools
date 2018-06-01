@@ -1,3 +1,5 @@
+#!/usr/bin/python2.7
+
 import argparse
 import logging
 from arribada_tools import log
