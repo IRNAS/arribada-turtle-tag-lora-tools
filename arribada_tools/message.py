@@ -319,7 +319,7 @@ class ConfigMessage_LOG_CREATE_REQ(ConfigMessage):
     name = 'LOG_CREATE_REQ'
 
     def __init__(self, **kwargs):
-        ConfigMessage.__init__(self, b'B?I', ['mode', 'sync_enable', 'max_file_size'], **kwargs)
+        ConfigMessage.__init__(self, b'B?', ['mode', 'sync_enable'], **kwargs)
 
     def pack(self):
         mode = self.mode
