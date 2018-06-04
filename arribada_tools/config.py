@@ -308,9 +308,9 @@ class ConfigItem_GPS_ScheduledAquisitionNoFixTimeout(ConfigItem):
         ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
-class ConfigItem_saltwater_switch_LogEnable(ConfigItem):
+class ConfigItem_saltwaterSwitch_LogEnable(ConfigItem):
     tag = 0x0800
-    path = 'saltwater_switch'
+    path = 'saltwaterSwitch'
     params = ['logEnable']
     json_params = params
 
@@ -318,9 +318,9 @@ class ConfigItem_saltwater_switch_LogEnable(ConfigItem):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
 
 
-class ConfigItem_saltwater_switch_HysteresisPeriod(ConfigItem):
+class ConfigItem_saltwaterSwitch_HysteresisPeriod(ConfigItem):
     tag = 0x0801
-    path = 'saltwater_switch'
+    path = 'saltwaterSwitch'
     params = ['hysteresisPeriod']
     json_params = params
 
