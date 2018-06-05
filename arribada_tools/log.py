@@ -209,11 +209,20 @@ class LogItem_Temperature_Temperature(LogItem):
         LogItem.__init__(self, b'H', self.fields, **kwargs)
 
 
-class LogItem_Builtin_Surfaced(LogItem):
+class LogItem_SaltwaterSwitch_Surfaced(LogItem):
     tag = 0x07
     name = 'Surfaced'
 
 
-class LogItem_Builtin_Submerged(LogItem):
+class LogItem_SaltwaterSwitch_Submerged(LogItem):
     tag = 0x08
     name = 'Submerged'
+
+
+class LogItem_Battery_Charge(LogItem):
+    tag = 0x09
+    name = 'BatteryCharge'
+    fields = ['charge']
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'B', self.fields, **kwargs)

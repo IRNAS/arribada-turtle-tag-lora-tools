@@ -799,3 +799,23 @@ class ConfigItem_BLE_BeaconAdvertisingConfiguration(ConfigItem):
             self.configuration = 'LOCATION'
         else:
             self.configuration = 'UNKNOWN'
+
+
+class ConfigItem_Battery_LogEnable(ConfigItem):
+    tag = 0x0900
+    path = 'battery'
+    params = ['logEnable']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'?', self.params, **kwargs)
+
+
+class ConfigItem_Battery_LowThreshold(ConfigItem):
+    tag = 0x0901
+    path = 'battery'
+    params = ['lowThreshold']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'B', self.params, **kwargs)
