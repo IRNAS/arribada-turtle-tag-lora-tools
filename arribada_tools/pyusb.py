@@ -118,9 +118,18 @@ class UsbHost():
 
     def __init__(self):
         self._endpoints = []
-        self.dev = usb.core.find(idVendor=UsbHost.VENDOR_ID, idProduct=UsbHost.PRODUCT_ID)
-        if self.dev is None:
+        dev = usb.core.find(find_all=True)
+        devs = [cfg for cfg in dev if cfg.idVendor == UsbHost.VENDOR_ID and cfg.idProduct == UsbHost.PRODUCT_ID]
+        if not devs:
             raise ExceptionUsbDeviceNotFound
+        # Allow USB_INDEX environment variable to set which device in the
+        # enumeration list we talk to i.e., 0....N-1
+        usb_index = 0 if 'USB_INDEX' not in os.environ else int(os.environ['USB_INDEX'])
+        # Make sure USB_INDEX is in valid range
+        if usb_index >= len(devs):
+            logger.warn('USB_INDEX=%u is out of range - using index 0 instead', usb_index)
+            usb_index = 0
+        self.dev = devs[usb_index]
         if os.name != 'posix':
             self.dev.set_configuration()
         try:
