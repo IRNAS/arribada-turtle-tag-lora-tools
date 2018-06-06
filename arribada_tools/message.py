@@ -10,6 +10,26 @@ class ExceptionMessageInvalidValue(Exception):
     pass
 
 
+def str_error(error_code):
+    errors = [ 'CMD_NO_ERROR',
+      'CMD_ERROR_FILE_NOT_FOUND',
+      'CMD_ERROR_FILE_ALREADY_EXISTS',
+      'CMD_ERROR_INVALID_CONFIG_TAG',
+      'CMD_ERROR_GPS_COMMS',
+      'CMD_ERROR_TIMEOUT',
+      'CMD_ERROR_CONFIG_PROTECTED',
+      'CMD_ERROR_CONFIG_TAG_NOT_SET',
+      'CMD_ERROR_BRIDGING_DISABLED',
+      'CMD_ERROR_DATA_OVERSIZE',
+      'CMD_ERROR_INVALID_PARAMETER',
+      'CMD_ERROR_INVALID_FW_IMAGE_TYPE',
+      'CMD_ERROR_IMAGE_CRC_MISMATCH',
+      'CMD_ERROR_FILE_INCOMPATIBLE' ]
+    if error_code >= len(errors):
+        return 'ERROR_UNKNOWN'
+    return errors[error_code]
+
+
 def decode(data):
 
     """Attempt to decode a message from an input data buffer"""

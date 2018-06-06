@@ -42,6 +42,8 @@ try:
 
     if args.debug:
         logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.DEBUG)
+    else:
+        logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.WARN)
 
     if args.bluetooth_uuid:
         comms_backend = backend.BackendBluetooth(uuid=args.bluetooth_uuid)
@@ -94,11 +96,11 @@ try:
     
     if args.reset:
         cfg.reset(args.reset)
-    
+
     if args.firmware_type and args.firmware:
         cfg.fw_upgrade(args.firmware_type, args.firmware.read())
 except:
-    print "Unexpected error: %s" % sys.exc_info()[0]
+    print "Unexpected error: %s" % str(sys.exc_info())
 
 if comms_backend:
     comms_backend.cleanup()

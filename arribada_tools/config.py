@@ -7,10 +7,16 @@ import binascii
 import datetime
 import dateutil.parser
 
+__version__ = 1
+
 logger = logging.getLogger(__name__)
 
 
 class ExceptionConfigInvalidValue(Exception):
+    pass
+
+
+class ExceptionConfigInvalidJSONField(Exception):
     pass
 
 
@@ -132,6 +138,8 @@ def json_loads(text):
             if path not in obj:
                 obj[path] = cls()
             setattr(obj[path], param, flat[i])
+        else:
+            raise ExceptionConfigInvalidJSONField('Could not find %s' % i)
     return [obj[i] for i in obj]
 
 
