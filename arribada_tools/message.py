@@ -290,6 +290,31 @@ class ConfigMessage_FW_SEND_IMAGE_REQ(ConfigMessage):
     def __init__(self, **kwargs):
         ConfigMessage.__init__(self, b'BII', ['image_type', 'length', 'crc',], **kwargs)
 
+    def pack(self):
+        image_type = self.image_type
+        if self.image_type == 'STM32':
+            self.image_type = 1
+        elif self.image_type == 'BLE':
+            self.image_type = 2
+        elif self.image_type == 'SOFTDEVICE':
+            self.image_type = 3
+        else:
+            raise ExceptionMessageInvalidValue
+        data = ConfigMessage.pack(self)
+        self.image_type = image_type
+        return data
+
+    def unpack(self, data):
+        ConfigMessage.unpack(self, data)
+        if (self.image_type == 1):
+            self.image_type = 'STM32'
+        elif (self.image_type == 2):
+            self.image_type = 'BLE'
+        elif (self.image_type == 3):
+            self.image_type = 'SOFTDEVICE'
+        else:
+            self.image_type = 'UNKNOWN'
+
 
 class ConfigMessage_FW_SEND_IMAGE_COMPLETE_CNF(GenericResponse):
 
@@ -307,6 +332,31 @@ class ConfigMessage_FW_APPLY_IMAGE_REQ(ConfigMessage):
 
     def __init__(self, **kwargs):
         ConfigMessage.__init__(self, b'B', ['image_type'], **kwargs)
+
+    def pack(self):
+        image_type = self.image_type
+        if self.image_type == 'STM32':
+            self.image_type = 1
+        elif self.image_type == 'BLE':
+            self.image_type = 2
+        elif self.image_type == 'SOFTDEVICE':
+            self.image_type = 3
+        else:
+            raise ExceptionMessageInvalidValue
+        data = ConfigMessage.pack(self)
+        self.image_type = image_type
+        return data
+
+    def unpack(self, data):
+        ConfigMessage.unpack(self, data)
+        if (self.image_type == 1):
+            self.image_type = 'STM32'
+        elif (self.image_type == 2):
+            self.image_type = 'BLE'
+        elif (self.image_type == 3):
+            self.image_type = 'SOFTDEVICE'
+        else:
+            self.image_type = 'UNKNOWN'
 
 
 class ConfigMessage_RESET_REQ(ConfigMessage):

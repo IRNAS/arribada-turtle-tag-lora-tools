@@ -23,7 +23,7 @@ parser.add_argument('--protect', action='store_true', required=False)
 parser.add_argument('--unprotect', action='store_true', required=False)
 parser.add_argument('--setdatetime', required=False)
 parser.add_argument('--getdatetime', action='store_true', required=False)
-parser.add_argument('--firmware_type', type=int, required=False)
+parser.add_argument('--firmware_type', required=False)
 parser.add_argument('--firmware', type=argparse.FileType('rb'), required=False)
 parser.add_argument('--version', action='store_true', required=False)
 
