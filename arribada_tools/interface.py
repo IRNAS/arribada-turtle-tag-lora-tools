@@ -106,7 +106,7 @@ class ConfigInterface(object):
         return self._backend.read(resp.length, self.timeout)
 
     def fw_upgrade(self, image_type, data):
-        crc = binascii.crc32(data)
+        crc = binascii.crc32(data) & 0xFFFFFFFF # Ensure CRC32 is unsigned
         cmd = message.ConfigMessage_FW_SEND_IMAGE_REQ(image_type=image_type,
                                                       length=len(data),
                                                       crc=crc)
