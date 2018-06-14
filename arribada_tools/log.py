@@ -170,8 +170,18 @@ class LogItem_Pressure_Pressure(LogItem):
     fields = ['pressure']
 
     def __init__(self, **kwargs):
-        LogItem.__init__(self, b'H', self.fields, **kwargs)
+        LogItem.__init__(self, b'i', self.fields, **kwargs)
 
+    def pack(self):
+        pressure = self.pressure
+        self.pressure = int(self.pressure * 1000.0)
+        data = LogItem.pack(self)
+        self.pressure = pressure
+        return data
+
+    def unpack(self, data):
+        LogItem.unpack(self, data)
+        self.pressure = self.pressure / 1000.0
 
 class LogItem_AXL_XYZ(LogItem):
     tag = 0x03
