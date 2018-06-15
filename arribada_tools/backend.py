@@ -89,7 +89,7 @@ class BackendUsb(_Backend):
 
         size = 0
         while data:
-            resp = self._usb.write(pyusb.EP_MSG_OUT, data[:63], timeout) # See https://www.microchip.com/forums/m818567.aspx for why a 1 less than 64 is sent
+            resp = self._usb.write(pyusb.EP_MSG_OUT, data[:512 - 1], timeout) # See https://www.microchip.com/forums/m818567.aspx for why 1 less than 512 is sent
             resp.wait()
             if resp.status <= 0:
                 break
