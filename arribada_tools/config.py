@@ -493,20 +493,20 @@ class ConfigItem_AXL_Config(ConfigItem):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
 
 
-class ConfigItem_AXL_SampleRate(ConfigItem):
-    tag = 0x0203
+class ConfigItem_AXL_HighThreshold(ConfigItem):
+    tag = 0x0202
     path = 'accelerometer'
-    params = ['sampleRate']
+    params = ['highThreshold']
     json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
-class ConfigItem_AXL_HighThreshold(ConfigItem):
-    tag = 0x0202
+class ConfigItem_AXL_SampleRate(ConfigItem):
+    tag = 0x0203
     path = 'accelerometer'
-    params = ['highThreshold']
+    params = ['sampleRate']
     json_params = params
 
     def __init__(self, **kwargs):
@@ -544,9 +544,29 @@ class ConfigItem_AXL_Mode(ConfigItem):
             self.mode = 'UNKNOWN'
 
 
+class ConfigItem_AXL_ScheduledAquisitionInterval(ConfigItem):
+    tag = 0x0205
+    path = 'accelerometer'
+    params = ['scheduledAquisitionInterval']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
+class ConfigItem_AXL_MaximumAquisitionTime(ConfigItem):
+    tag = 0x0206
+    path = 'accelerometer'
+    params = ['maximumAquisitionTime']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
 class ConfigItem_PressureSensor_LogEnable(ConfigItem):
     tag = 0x0300
-    path = 'pressure_sensor'
+    path = 'pressureSensor'
     params = ['logEnable']
     json_params = params
 
@@ -556,7 +576,7 @@ class ConfigItem_PressureSensor_LogEnable(ConfigItem):
 
 class ConfigItem_PressureSensor_SampleRate(ConfigItem):
     tag = 0x0301
-    path = 'pressure_sensor'
+    path = 'pressureSensor'
     params = ['sampleRate']
     json_params = params
 
@@ -566,7 +586,7 @@ class ConfigItem_PressureSensor_SampleRate(ConfigItem):
 
 class ConfigItem_PressureSensor_LowThreshold(ConfigItem):
     tag = 0x0302
-    path = 'pressure_sensor'
+    path = 'pressureSensor'
     params = ['lowThreshold']
     json_params = params
 
@@ -576,7 +596,7 @@ class ConfigItem_PressureSensor_LowThreshold(ConfigItem):
 
 class ConfigItem_PressureSensor_HighThreshold(ConfigItem):
     tag = 0x0303
-    path = 'pressure_sensor'
+    path = 'pressureSensor'
     params = ['highThreshold']
     json_params = params
 
@@ -586,7 +606,7 @@ class ConfigItem_PressureSensor_HighThreshold(ConfigItem):
 
 class ConfigItem_PressureSensor_Mode(ConfigItem):
     tag = 0x0304
-    path = 'pressure_sensor'
+    path = 'pressureSensor'
     params = ['mode']
     json_params = params
 
@@ -623,9 +643,29 @@ class ConfigItem_PressureSensor_Mode(ConfigItem):
             self.mode = 'UNKNOWN'
 
 
+class ConfigItem_PressureSensor_ScheduledAquisitionInterval(ConfigItem):
+    tag = 0x0305
+    path = 'pressureSensor'
+    params = ['scheduledAquisitionInterval']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
+class ConfigItem_PressureSensor_MaximumAquisitionTime(ConfigItem):
+    tag = 0x0306
+    path = 'pressureSensor'
+    params = ['maximumAquisitionTime']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
 class ConfigItem_TempSensor_LogEnable(ConfigItem):
     tag = 0x0700
-    path = 'temperate_sensor'
+    path = 'temperateSensor'
     params = ['logEnable']
     json_params = params
 
@@ -635,7 +675,7 @@ class ConfigItem_TempSensor_LogEnable(ConfigItem):
 
 class ConfigItem_TempSensor_SampleRate(ConfigItem):
     tag = 0x0701
-    path = 'temperate_sensor'
+    path = 'temperateSensor'
     params = ['sampleRate']
     json_params = params
 
@@ -645,7 +685,7 @@ class ConfigItem_TempSensor_SampleRate(ConfigItem):
 
 class ConfigItem_TempSensor_LowThreshold(ConfigItem):
     tag = 0x0702
-    path = 'temperate_sensor'
+    path = 'temperateSensor'
     params = ['lowThreshold']
     json_params = params
 
@@ -655,7 +695,7 @@ class ConfigItem_TempSensor_LowThreshold(ConfigItem):
 
 class ConfigItem_TempSensor_HighThreshold(ConfigItem):
     tag = 0x0703
-    path = 'temperate_sensor'
+    path = 'temperateSensor'
     params = ['highThreshold']
     json_params = params
 
@@ -665,7 +705,7 @@ class ConfigItem_TempSensor_HighThreshold(ConfigItem):
 
 class ConfigItem_TempSensor_Mode(ConfigItem):
     tag = 0x0704
-    path = 'temperate_sensor'
+    path = 'temperateSensor'
     params = ['mode']
     json_params = params
 
