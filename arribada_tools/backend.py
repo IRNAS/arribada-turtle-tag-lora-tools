@@ -89,12 +89,16 @@ class BackendUsb(_Backend):
 
         size = 0
         while data:
-            resp = self._usb.write(pyusb.EP_MSG_OUT, data[:512 - 1], timeout) # See https://www.microchip.com/forums/m818567.aspx for why 1 less than 512 is sent
+            resp = self._usb.write(pyusb.EP_MSG_OUT, data[:512], timeout)
             resp.wait()
             if resp.status <= 0:
                 break
             data = data[resp.status:]
             size = size + resp.status
+            if (resp.status == 512):
+                resp = self._usb.write(pyusb.EP_MSG_OUT, '', timeout) # See https://www.microchip.com/forums/m818567.aspx for why a zero length packet is required
+                resp.wait()
+
         return size
 
     def read(self, length, timeout=None):
