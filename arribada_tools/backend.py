@@ -32,9 +32,9 @@ class _Backend(object):
 
 class BackendBluetooth(_Backend):
 
-    def __init__(self, uuid=None):
+    def __init__(self, dev_addr=None):
         try:
-            self._ble = BluetoothTracker(uuid)
+            self._ble = BluetoothTracker(dev_addr)
         except:
             raise ExceptionBackendNotFound
 
