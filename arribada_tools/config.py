@@ -7,7 +7,7 @@ import binascii
 import datetime
 import dateutil.parser
 
-__version__ = 1
+__version__ = 3
 
 logger = logging.getLogger(__name__)
 
@@ -314,6 +314,31 @@ class ConfigItem_GPS_ScheduledAquisitionNoFixTimeout(ConfigItem):
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
+class ConfigItem_GPS_LastKnownPosition(ConfigItem):
+    tag = 0x0007
+    path = 'gps'
+    params = ['iTOW', 'longitude', 'latitude', 'height']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'Llll', self.params, **kwargs)
+
+    def pack(self):
+        longitude = self.longitude
+        latitude = self.latitude
+        self.longitude = int(self.longitude / 1E-7)
+        self.latitude = int(self.latitude / 1E-7)
+        data = ConfigItem.pack(self)
+        self.longitude = longitude
+        self.latitude = latitude
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        self.longitude = 1E-7 * self.longitude
+        self.latitude = 1E-7 * self.latitude
 
 
 class ConfigItem_saltwaterSwitch_LogEnable(ConfigItem):
@@ -742,111 +767,134 @@ class ConfigItem_TempSensor_Mode(ConfigItem):
             self.mode = 'UNKNOWN'
 
 
-class ConfigItem_BLE_UUID(ConfigItem):
+class ConfigItem_BLE_DeviceAddress(ConfigItem):
     tag = 0x0500
     path = 'bluetooth'
-    params = ['UUID']
+    params = ['deviceAddress']
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'16s', self.params, **kwargs)
+        ConfigItem.__init__(self, b'6s', self.params, **kwargs)
 
     def pack(self):
-        old = self.UUID
-        self.UUID = binascii.unhexlify(self.UUID.replace(':', ''))
+        old = self.deviceAddress
+        self.deviceAddress = binascii.unhexlify(self.deviceAddress.replace(':', ''))
         data = ConfigItem.pack(self)
-        self.UUID = old
+        print "deviceAddress.len = ", len(self.deviceAddress)
+        self.deviceAddress = old
         return data
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        device_id = binascii.hexlify(self.UUID)
+        device_id = binascii.hexlify(self.deviceAddress)
         new_id = b''
         for i in range(len(device_id)):
             new_id = new_id + device_id[i]
             if i & 1 and i != (len(device_id)-1):
                 new_id = new_id + ':'
-        self.UUID = new_id
+        self.deviceAddress = new_id
+        print "deviceAddress.len = ", len(self.deviceAddress)
 
 
-class ConfigItem_BLE_BeaconEnable(ConfigItem):
+class ConfigItem_BLE_TriggerControl(ConfigItem):
     tag = 0x0501
     path = 'bluetooth.beacon'
-    params = ['enable']
+    params = ['triggerControl']
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'?', self.params, **kwargs)
+        ConfigItem.__init__(self, b'B', self.params, **kwargs)
 
 
-class ConfigItem_BLE_GeoFenceTriggerLocation(ConfigItem):
+class ConfigItem_BLE_ScheduledInterval(ConfigItem):
     tag = 0x0502
-    path = 'bluetooth.geofence'
-    params = ['longitude', 'latitude', 'radius']
-    json_params = params
-
-    def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'2lL', self.params, **kwargs)
-
-    def pack(self):
-        longitude = self.longitude
-        latitude = self.latitude
-        radius = self.radius
-        self.longitude = int(self.longitude / 1E-7)
-        self.latitude = int(self.latitude / 1E-7)
-        self.radius = int(self.radius / 1E-2)
-        data = ConfigItem.pack(self)
-        self.longitude = longitude
-        self.latitude = latitude
-        self.radius = radius
-        return data
-
-    def unpack(self, data):
-        ConfigItem.unpack(self, data)
-        self.longitude = 1E-7 * self.longitude
-        self.latitude = 1E-7 * self.latitude
-        self.radius = 1E-2 * self.radius
-
-
-class ConfigItem_BLE_BeaconAdvertisingInterval(ConfigItem):
-    tag = 0x0503
-    path = 'bluetooth.advertising'
-    params = ['interval']
+    path = 'bluetooth.beacon'
+    params = ['scheduledInterval']
     json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
-class ConfigItem_BLE_BeaconAdvertisingConfiguration(ConfigItem):
+class ConfigItem_BLE_ScheduledDuration(ConfigItem):
+    tag = 0x0503
+    path = 'bluetooth.beacon'
+    params = ['scheduledDuration']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
+class ConfigItem_BLE_AdvertisingInterval(ConfigItem):
     tag = 0x0504
-    path = 'bluetooth.advertising'
-    params = ['configuration']
+    path = 'bluetooth.beacon'
+    params = ['advertisingInterval']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
+class ConfigItem_BLE_ConnectionInterval(ConfigItem):
+    tag = 0x0505
+    path = 'bluetooth.beacon'
+    params = ['connectionInterval']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
+class ConfigItem_BLE_InactivityTimeout(ConfigItem):
+    tag = 0x0506
+    path = 'bluetooth.beacon'
+    params = ['inactivityTimeout']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
+class ConfigItem_BLE_PHYMode(ConfigItem):
+    tag = 0x0507
+    path = 'bluetooth.beacon'
+    params = ['phyMode']
     json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
 
     def pack(self):
-        config = self.configuration
-        if self.configuration == 'IDENTITY':
-            self.configuration = 0
-        elif self.configuration == 'LOCATION':
-            self.configuration = 1
+        phyMode = self.phyMode
+        if self.phyMode == '1_MBPS':
+            self.phyMode = 0
+        elif self.phyMode == '2_MBPS':
+            self.phyMode = 1
         else:
             raise ExceptionConfigInvalidValue
         data = ConfigItem.pack(self)
-        self.configuration = config
+        self.phyMode = phyMode
         return data
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        if (self.configuration == 0):
-            self.configuration = 'IDENTITY'
-        elif (self.configuration == 1):
-            self.configuration = 'LOCATION'
+        if (self.phyMode == 0):
+            self.phyMode = '1_MBPS'
+        elif (self.phyMode == 1):
+            self.phyMode = '2_MBPS'
         else:
-            self.configuration = 'UNKNOWN'
+            self.phyMode = 'UNKNOWN'
+
+
+class ConfigItem_BLE_LogEnable(ConfigItem):
+    tag = 0x0508
+    path = 'bluetooth.beacon'
+    params = ['logEnable']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'?', self.params, **kwargs)
 
 
 class ConfigItem_Battery_LogEnable(ConfigItem):
