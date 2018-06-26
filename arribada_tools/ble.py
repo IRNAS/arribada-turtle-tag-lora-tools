@@ -1,3 +1,5 @@
+from array import array
+import binascii
 import struct
 import os
 from bluepy.btle import UUID, Peripheral, DefaultDelegate
@@ -32,6 +34,7 @@ class MyDelegate(DefaultDelegate):
         self._buffer = buf
 
     def handleNotification(self, cHandle, data):
+        print "Received: ", binascii.hexlify(array('B', data))
         self._buffer.write(data)
 
 
@@ -52,12 +55,26 @@ class BluetoothTracker():
         self._config_char = self._config_service.getCharacteristics(config_char_uuid)[0]
         notifications_enable(self._periph, self._config_char)
 
-    def write(self, data):
-        while data:
-            self._config_char.write(data[:MAX_PACKET_SIZE])
-            data = data[MAX_PACKET_SIZE]
+        # The first notification is rubbish, perhaps a confirmation of them being enabled?
+        self._periph.waitForNotifications(5)
+        while self._buffer.occupancy():
+            self._buffer.read(1) # remove this packet
 
-    def read(self, length, timeout=0):
+    def write(self, data):
+        while data: # Send data in discrete packets
+            bytesToSend = min(len(data), MAX_PACKET_SIZE)
+            self._config_char.write(data[:bytesToSend])
+            print "Transmit: ", binascii.hexlify(array('B', data[:bytesToSend]))
+            data = data[bytesToSend:]
+
+    def read(self, timeout=0):
+        # Read just one packet
         if not self._buffer.occupancy():
-            self.periph.waitForNotifications(timeout)
+            self._periph.waitForNotifications(timeout)
+        return self._buffer.read(self._buffer.occupancy())
+
+    def readFull(self, length, timeout=0):
+        # Read up until length has been reached
+        while self._buffer.occupancy() < length:
+            self._periph.waitForNotifications(timeout)
         return self._buffer.read(length)

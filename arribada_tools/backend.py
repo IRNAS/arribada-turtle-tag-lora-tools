@@ -38,11 +38,32 @@ class BackendBluetooth(_Backend):
         except:
             raise ExceptionBackendNotFound
 
+    def command_response(self, command, timeout=None):
+        """Send a command (optionally) over USB and wait for a response to come back.
+        The input command is a message object and any response shall be
+        first decoded to a response message object.
+        """
+
+        #FIXME: implement timeout
+
+        if command:
+            resp = self._ble.write(command.pack())
+
+        resp = self._ble.read(timeout)
+
+        if resp == None:
+            return resp
+        
+        else:
+            (msg, _) = message.decode(array('B',resp))
+            return msg
+
     def write(self, data, timeout=None):
         self._ble.write(data)
+        return len(data)
 
     def read(self, length, timeout=None):
-        self._ble.read(timeout)
+        return self._ble.readFull(length, timeout)
 
 
 class BackendUsb(_Backend):
