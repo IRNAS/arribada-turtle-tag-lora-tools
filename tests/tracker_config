@@ -3,6 +3,7 @@
 import argparse
 import logging
 import sys
+import json
 from arribada_tools import backend, interface, config, __version__
 
 parser = argparse.ArgumentParser()
@@ -89,10 +90,10 @@ try:
         cfg.protect_configuration()
     
     if args.status:
-        print cfg.get_status()
+        print json.dumps(cfg.get_status())
     
     if args.battery:
-        print cfg.get_battery_status()
+        print json.dumps(cfg.get_battery_status())
     
     if args.reset:
         cfg.reset(args.reset)
