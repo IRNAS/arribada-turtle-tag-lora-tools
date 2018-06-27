@@ -55,11 +55,6 @@ class BluetoothTracker():
         self._config_char = self._config_service.getCharacteristics(config_char_uuid)[0]
         notifications_enable(self._periph, self._config_char)
 
-        # The first notification is rubbish, perhaps a confirmation of them being enabled?
-        self._periph.waitForNotifications(5)
-        while self._buffer.occupancy():
-            self._buffer.read(1) # remove this packet
-
     def write(self, data):
         while data: # Send data in discrete packets
             bytesToSend = min(len(data), MAX_PACKET_SIZE)
