@@ -318,7 +318,7 @@ class ConfigItem_GPS_ScheduledAquisitionNoFixTimeout(ConfigItem):
 
 class ConfigItem_GPS_LastKnownPosition(ConfigItem):
     tag = 0x0007
-    path = 'gps'
+    path = 'gps.lastKnownPosition'
     params = ['iTOW', 'longitude', 'latitude', 'height']
     json_params = params
 
@@ -798,7 +798,7 @@ class ConfigItem_BLE_DeviceAddress(ConfigItem):
 
 class ConfigItem_BLE_TriggerControl(ConfigItem):
     tag = 0x0501
-    path = 'bluetooth.beacon'
+    path = 'bluetooth'
     params = ['triggerControl']
     json_params = params
 
@@ -808,7 +808,7 @@ class ConfigItem_BLE_TriggerControl(ConfigItem):
 
 class ConfigItem_BLE_ScheduledInterval(ConfigItem):
     tag = 0x0502
-    path = 'bluetooth.beacon'
+    path = 'bluetooth'
     params = ['scheduledInterval']
     json_params = params
 
@@ -818,7 +818,7 @@ class ConfigItem_BLE_ScheduledInterval(ConfigItem):
 
 class ConfigItem_BLE_ScheduledDuration(ConfigItem):
     tag = 0x0503
-    path = 'bluetooth.beacon'
+    path = 'bluetooth'
     params = ['scheduledDuration']
     json_params = params
 
@@ -828,7 +828,7 @@ class ConfigItem_BLE_ScheduledDuration(ConfigItem):
 
 class ConfigItem_BLE_AdvertisingInterval(ConfigItem):
     tag = 0x0504
-    path = 'bluetooth.beacon'
+    path = 'bluetooth'
     params = ['advertisingInterval']
     json_params = params
 
@@ -838,7 +838,7 @@ class ConfigItem_BLE_AdvertisingInterval(ConfigItem):
 
 class ConfigItem_BLE_ConnectionInterval(ConfigItem):
     tag = 0x0505
-    path = 'bluetooth.beacon'
+    path = 'bluetooth'
     params = ['connectionInterval']
     json_params = params
 
@@ -848,7 +848,7 @@ class ConfigItem_BLE_ConnectionInterval(ConfigItem):
 
 class ConfigItem_BLE_InactivityTimeout(ConfigItem):
     tag = 0x0506
-    path = 'bluetooth.beacon'
+    path = 'bluetooth'
     params = ['inactivityTimeout']
     json_params = params
 
@@ -858,7 +858,7 @@ class ConfigItem_BLE_InactivityTimeout(ConfigItem):
 
 class ConfigItem_BLE_PHYMode(ConfigItem):
     tag = 0x0507
-    path = 'bluetooth.beacon'
+    path = 'bluetooth'
     params = ['phyMode']
     json_params = params
 
@@ -889,7 +889,7 @@ class ConfigItem_BLE_PHYMode(ConfigItem):
 
 class ConfigItem_BLE_LogEnable(ConfigItem):
     tag = 0x0508
-    path = 'bluetooth.beacon'
+    path = 'bluetooth'
     params = ['logEnable']
     json_params = params
 
