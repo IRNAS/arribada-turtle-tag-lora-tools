@@ -119,7 +119,7 @@ class ConfigInterface(object):
         resp = self._backend.command_response(None, self.timeout)
         resp_error_handler(cmd.name, resp, 'FW_SEND_IMAGE_COMPLETE_CNF')
         cmd = message.ConfigMessage_FW_APPLY_IMAGE_REQ(image_type=image_type)
-        resp = self._backend.command_response(cmd, self.timeout)
+        resp = self._backend.command_response(cmd, 20.0) # We require a much longer timeout here to allow time for the image to be applied
         resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
 
     def reset(self, reset_type):
