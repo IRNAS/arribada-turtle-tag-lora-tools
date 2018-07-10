@@ -42,6 +42,7 @@ setup(
         'tests/gps_almanac',
         'tests/gps_ascii_config',
         'tests/log_parse',
+        'tests/ble_scan',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

@@ -1,13 +1,19 @@
 #!/usr/bin/python2.7
 
+import argparse
 import os
 from bluepy.btle import Scanner
 
 SCAN_NAME = 'Arribada_Tracker'
 HCI_DEV = 0 if 'HCI_DEV' not in os.environ else int(os.environ['HCI_DEV'])
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--timeout', required=False)
+args = parser.parse_args()
+
+timeout = int(args.timeout) if args.timeout else 1
 scanner = Scanner(HCI_DEV)
-devices = scanner.scan(1)
+devices = scanner.scan(timeout)
 
 device_list = []
 

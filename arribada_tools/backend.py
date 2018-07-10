@@ -109,9 +109,9 @@ class BackendUsb(_Backend):
             timeout = int(timeout)
 
         size = 0
-        zeroBytePacketSent = False
+        zero_byte_packet_sent = False
         while data:
-            zeroBytePacketSent = False
+            zero_byte_packet_sent = False
             resp = self._usb.write(pyusb.EP_MSG_OUT, data[:512], timeout)
             resp.wait()
             if resp.status <= 0:
@@ -119,12 +119,12 @@ class BackendUsb(_Backend):
             data = data[resp.status:]
             size = size + resp.status
             if (resp.status == 512):
-                zeroBytePacketSent = True
+                zero_byte_packet_sent = True
                 resp = self._usb.write(pyusb.EP_MSG_OUT, '', timeout) # See https://www.microchip.com/forums/m818567.aspx for why a zero length packet is required
                 resp.wait()
 
         # Was the last packet we sent a multiple of 64, and have we also not already sent a zero packet size
-        if (size % 64) == 0 and not zeroBytePacketSent:
+        if (size % 64) == 0 and not zero_byte_packet_sent:
             resp = self._usb.write(pyusb.EP_MSG_OUT, '', timeout)
             resp.wait()
 
