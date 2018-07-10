@@ -34,7 +34,7 @@ class MyDelegate(DefaultDelegate):
         self._buffer = buf
 
     def handleNotification(self, cHandle, data):
-        print "Received: ", binascii.hexlify(array('B', data))
+        #print "Received: ", binascii.hexlify(array('B', data))
         self._buffer.write(data)
 
 
@@ -59,7 +59,7 @@ class BluetoothTracker():
         while data: # Send data in discrete packets
             bytesToSend = min(len(data), MAX_PACKET_SIZE)
             self._config_char.write(data[:bytesToSend])
-            print "Transmit: ", binascii.hexlify(array('B', data[:bytesToSend]))
+            #print "Transmit: ", binascii.hexlify(array('B', data[:bytesToSend]))
             data = data[bytesToSend:]
 
     def read(self, timeout=0):
