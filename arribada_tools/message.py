@@ -367,6 +367,27 @@ class ConfigMessage_RESET_REQ(ConfigMessage):
     def __init__(self, **kwargs):
         ConfigMessage.__init__(self, b'B', ['reset_type'], **kwargs)
 
+    def pack(self):
+        reset_type = self.reset_type
+        if self.reset_type == 'STM32':
+            self.reset_type = 0
+        elif self.reset_type == 'FLASH':
+            self.reset_type = 1
+        else:
+            raise ExceptionMessageInvalidValue
+        data = ConfigMessage.pack(self)
+        self.reset_type = reset_type
+        return data
+
+    def unpack(self, data):
+        ConfigMessage.unpack(self, data)
+        if (self.reset_type == 0):
+            self.reset_type = 'STM32'
+        elif (self.reset_type == 1):
+            self.reset_type = 'FLASH'
+        else:
+            self.reset_type = 'UNKNOWN'
+
 
 class ConfigMessage_BATTERY_STATUS_REQ(ConfigMessageHeader):
 
