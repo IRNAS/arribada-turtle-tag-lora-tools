@@ -130,22 +130,28 @@ class LogItem_Builtin_LogEnd(LogItem):
 class LogItem_GPS_Position(LogItem):
     tag = 0x00
     name = 'GPSPosition'
-    fields = ['iTOW', 'longitude', 'latitude', 'height']
+    fields = ['iTOW', 'longitude', 'latitude', 'height', 'accuracyHorizontal', 'accuracyVertical']
 
     def __init__(self, **kwargs):
-        LogItem.__init__(self, b'I3l', self.fields, **kwargs)
+        LogItem.__init__(self, b'IlllII', self.fields, **kwargs)
 
     def pack(self):
         longitude = self.longitude
         latitude = self.latitude
         height = self.height
+        accuracyHorizontal = self.accuracyHorizontal
+        accuracyVertical = self.accuracyVertical
         self.longitude = int(self.longitude / 1E-7)
         self.latitude = int(self.latitude / 1E-7)
         self.height = int(self.height * 1000.0)
+        self.accuracyHorizontal = int(self.accuracyHorizontal * 1000.0)
+        self.accuracyVertical = int(self.accuracyVertical * 1000.0)
         data = LogItem.pack(self)
         self.longitude = longitude
         self.latitude = latitude
         self.height = height
+        self.accuracyHorizontal = accuracyHorizontal
+        self.accuracyVertical = accuracyVertical
         return data
 
     def unpack(self, data):
@@ -153,6 +159,8 @@ class LogItem_GPS_Position(LogItem):
         self.longitude = 1E-7 * self.longitude
         self.latitude = 1E-7 * self.latitude
         self.height = self.height / 1000.0
+        self.accuracyHorizontal = self.accuracyHorizontal / 1000.0
+        self.accuracyVertical = self.accuracyVertical / 1000.0
 
 
 class LogItem_GPS_TimeToFirstFix(LogItem):

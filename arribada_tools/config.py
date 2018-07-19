@@ -319,26 +319,38 @@ class ConfigItem_GPS_ScheduledAquisitionNoFixTimeout(ConfigItem):
 class ConfigItem_GPS_LastKnownPosition(ConfigItem):
     tag = 0x0007
     path = 'gps.lastKnownPosition'
-    params = ['iTOW', 'longitude', 'latitude', 'height']
+    params = ['iTOW', 'longitude', 'latitude', 'height', 'accuracyHorizontal', 'accuracyVertical']
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'Llll', self.params, **kwargs)
+        ConfigItem.__init__(self, b'IlllII', self.params, **kwargs)
 
     def pack(self):
         longitude = self.longitude
         latitude = self.latitude
+        height = self.height
+        accuracyHorizontal = self.accuracyHorizontal
+        accuracyVertical = self.accuracyVertical
         self.longitude = int(self.longitude / 1E-7)
         self.latitude = int(self.latitude / 1E-7)
+        self.height = int(self.height * 1000.0)
+        self.accuracyHorizontal = int(self.accuracyHorizontal * 1000.0)
+        self.accuracyVertical = int(self.accuracyVertical * 1000.0)
         data = ConfigItem.pack(self)
         self.longitude = longitude
         self.latitude = latitude
+        self.height = height
+        self.accuracyHorizontal = accuracyHorizontal
+        self.accuracyVertical = accuracyVertical
         return data
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
         self.longitude = 1E-7 * self.longitude
         self.latitude = 1E-7 * self.latitude
+        self.height = self.height / 1000.0
+        self.accuracyHorizontal = self.accuracyHorizontal / 1000.0
+        self.accuracyVertical = self.accuracyVertical / 1000.0
 
 
 class ConfigItem_saltwaterSwitch_LogEnable(ConfigItem):
