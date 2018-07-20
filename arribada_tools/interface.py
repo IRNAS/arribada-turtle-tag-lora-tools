@@ -123,7 +123,7 @@ class ConfigInterface(object):
         resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
 
     def reset(self, reset_type):
-        cmd = message.ConfigMessage_RESET_REQ(reset_type=int(reset_type))
+        cmd = message.ConfigMessage_RESET_REQ(reset_type=reset_type)
         resp = self._backend.command_response(cmd, self.timeout)
         resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
 
