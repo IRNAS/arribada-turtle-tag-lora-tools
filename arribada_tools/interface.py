@@ -124,7 +124,10 @@ class ConfigInterface(object):
 
     def reset(self, reset_type):
         cmd = message.ConfigMessage_RESET_REQ(reset_type=reset_type)
-        resp = self._backend.command_response(cmd, self.timeout)
+        if (reset_type == 'FLASH'):
+            resp = self._backend.command_response(cmd, 40) # The FLASH erase takes ~30 seconds
+        else:
+            resp = self._backend.command_response(cmd, self.timeout)
         resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
 
     def get_battery_status(self):
