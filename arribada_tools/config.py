@@ -792,7 +792,6 @@ class ConfigItem_BLE_DeviceAddress(ConfigItem):
         old = self.deviceAddress
         self.deviceAddress = binascii.unhexlify(self.deviceAddress.replace(':', ''))
         data = ConfigItem.pack(self)
-        print "deviceAddress.len = ", len(self.deviceAddress)
         self.deviceAddress = old
         return data
 
