@@ -2,6 +2,7 @@ import struct
 import logging
 import sys
 import inspect
+import binascii
 
 logger = logging.getLogger(__name__)
 
@@ -11,10 +12,10 @@ def decode(data, offset):
     the input data buffer, less the amount of data consumed."""
     item = TaggedItem()
     if ((len(data) + offset) < item.header_length):
-        return (None, data)
+        return None
 
     # Unpack header tag at current position
-    item.unpack(data[offset:offset+item.header_length])
+    item.unpack(data[offset:offset + item.header_length])
 
     # Find the correct configuration class based on the configuration tag
     cfg = None
@@ -26,9 +27,9 @@ def decode(data, offset):
             break
     if (cfg):
         try:
-            cfg.unpack(data)
+            cfg.unpack(data[offset:offset + cfg.length])
         except:
-            return (None, data) # Likely insufficient bytes to unpack
+            return None # Likely insufficient bytes to unpack
 
     return cfg
 
@@ -37,13 +38,12 @@ def decode_all(data):
     objects.
     """
     objects = []
-    val = 0
     offset = 0
     while offset < len(data):
         cfg = decode(data, offset)
-        offset += cfg.length
         if cfg:
             objects += [ cfg ]
+            offset += cfg.length
         else:
             break
     return objects
