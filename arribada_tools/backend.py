@@ -146,7 +146,8 @@ class BackendUsb(_Backend):
             resp.wait()
             if resp.status == -1:
                 break
-            data = data + resp.buffer
+            if len(resp.buffer):
+                data = data + resp.buffer
             length = length - len(resp.buffer)
         return data
 
