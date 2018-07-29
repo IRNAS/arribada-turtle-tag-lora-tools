@@ -804,7 +804,6 @@ class ConfigItem_BLE_DeviceAddress(ConfigItem):
             if i & 1 and i != (len(device_id)-1):
                 new_id = new_id + ':'
         self.deviceAddress = new_id
-        print "deviceAddress.len = ", len(self.deviceAddress)
 
 
 class ConfigItem_BLE_TriggerControl(ConfigItem):
