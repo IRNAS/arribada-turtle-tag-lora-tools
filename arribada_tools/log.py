@@ -3,20 +3,18 @@ import logging
 import sys
 import inspect
 
-
 logger = logging.getLogger(__name__)
 
-
-def decode(data):
+def decode(data, offset):
     """Attempt to decode a single log item from an input data buffer.
     A tuple is returned containing an instance of the log object plus
     the input data buffer, less the amount of data consumed."""
     item = TaggedItem()
-    if (len(data) < item.header_length):
+    if ((len(data) + offset) < item.header_length):
         return (None, data)
 
     # Unpack header tag at current position
-    item.unpack(data)
+    item.unpack(data[offset:offset+item.header_length])
 
     # Find the correct configuration class based on the configuration tag
     cfg = None
@@ -30,21 +28,20 @@ def decode(data):
         try:
             cfg.unpack(data)
         except:
-            # Likely insufficient bytes to unpack
-            return (None, data)
-        # Advance buffer past this configuration item
-        data = data[cfg.length:]
+            return (None, data) # Likely insufficient bytes to unpack
 
-    return (cfg, data)
-
+    return cfg
 
 def decode_all(data):
     """Iteratively decode an input data buffer to a list of log
     objects.
     """
     objects = []
-    while data:
-        (cfg, data) = decode(data)
+    val = 0
+    offset = 0
+    while offset < len(data):
+        cfg = decode(data, offset)
+        offset += cfg.length
         if cfg:
             objects += [ cfg ]
         else:
