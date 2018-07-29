@@ -19,6 +19,7 @@ else:
 
 data = args.file.read()
 objects = log.decode_all(data)
+del data # Mark the the now unused data as deletable
 
 for i in objects:
     if i.name == 'LogStart' or i.name == 'LogEnd':
