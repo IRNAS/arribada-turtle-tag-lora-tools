@@ -791,6 +791,8 @@ class ConfigItem_BLE_DeviceAddress(ConfigItem):
     def pack(self):
         old = self.deviceAddress
         self.deviceAddress = binascii.unhexlify(self.deviceAddress.replace(':', ''))
+        if (ord(self.deviceAddress[0]) & 0b11000000) != 0b11000000:
+            raise ExceptionConfigBLEDeviceAddressTopTwoBitsNotSet # Enforce top 2 bits being set
         data = ConfigItem.pack(self)
         self.deviceAddress = old
         return data
