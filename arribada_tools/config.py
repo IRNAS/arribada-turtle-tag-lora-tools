@@ -790,8 +790,8 @@ class ConfigItem_BLE_DeviceAddress(ConfigItem):
 
     def pack(self):
         old = self.deviceAddress
-        self.deviceAddress = binascii.unhexlify(self.deviceAddress.replace(':', ''))
-        if (ord(self.deviceAddress[0]) & 0b11000000) != 0b11000000:
+        self.deviceAddress = binascii.unhexlify(self.deviceAddress.replace(':', ''))[::-1]
+        if (ord(self.deviceAddress[5]) & 0b11000000) != 0b11000000:
             raise ExceptionConfigBLEDeviceAddressTopTwoBitsNotSet # Enforce top 2 bits being set
         data = ConfigItem.pack(self)
         self.deviceAddress = old
@@ -799,7 +799,7 @@ class ConfigItem_BLE_DeviceAddress(ConfigItem):
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        device_id = binascii.hexlify(self.deviceAddress)
+        device_id = binascii.hexlify(self.deviceAddress[::-1])
         new_id = b''
         for i in range(len(device_id)):
             new_id = new_id + device_id[i]
