@@ -296,8 +296,6 @@ class ConfigMessage_FW_SEND_IMAGE_REQ(ConfigMessage):
             self.image_type = 1
         elif self.image_type == 'BLE':
             self.image_type = 2
-        elif self.image_type == 'SOFTDEVICE':
-            self.image_type = 3
         else:
             raise ExceptionMessageInvalidValue
         data = ConfigMessage.pack(self)
@@ -310,8 +308,6 @@ class ConfigMessage_FW_SEND_IMAGE_REQ(ConfigMessage):
             self.image_type = 'STM32'
         elif (self.image_type == 2):
             self.image_type = 'BLE'
-        elif (self.image_type == 3):
-            self.image_type = 'SOFTDEVICE'
         else:
             self.image_type = 'UNKNOWN'
 
