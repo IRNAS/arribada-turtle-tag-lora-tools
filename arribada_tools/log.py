@@ -241,3 +241,85 @@ class LogItem_Battery_Charge(LogItem):
 
     def __init__(self, **kwargs):
         LogItem.__init__(self, b'B', self.fields, **kwargs)
+
+
+class LogItem_Bluetooth_Enabled(LogItem):
+    tag = 0x0A
+    name = 'BluetoothEnabled'
+    fields = ['cause']
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'B', self.fields, **kwargs)
+
+    def pack(self):
+        cause = self.cause
+        if self.cause == 'REED_SWITCH':
+            self.cause = 0
+        elif self.cause == 'SCHEDULE_TIMER':
+            self.cause = 1
+        elif self.cause == 'GEOFENCE':
+            self.cause = 2
+        else:
+            raise ExceptionLogInvalidValue
+        data = LogItem.pack(self)
+        self.cause = cause
+        return data
+
+    def unpack(self, data):
+        LogItem.unpack(self, data)
+        if (self.cause == 0):
+            self.cause = 'REED_SWITCH'
+        elif (self.cause == 1):
+            self.cause = 'SCHEDULE_TIMER'
+        elif (self.cause == 2):
+            self.cause = 'GEOFENCE'
+        else:
+            self.cause = 'UNKNOWN'
+
+
+class LogItem_Bluetooth_Disabled(LogItem):
+    tag = 0x0B
+    name = 'BluetoothDisabled'
+    fields = ['cause']
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'B', self.fields, **kwargs)
+
+    def pack(self):
+        cause = self.cause
+        if self.cause == 'REED_SWITCH':
+            self.cause = 0
+        elif self.cause == 'SCHEDULE_TIMER':
+            self.cause = 1
+        elif self.cause == 'GEOFENCE':
+            self.cause = 2
+        elif self.cause == 'INACTIVITY_TIMEOUT':
+            self.cause = 2
+        else:
+            raise ExceptionLogInvalidValue
+        data = LogItem.pack(self)
+        self.cause = cause
+        return data
+
+    def unpack(self, data):
+        LogItem.unpack(self, data)
+        if (self.cause == 0):
+            self.cause = 'REED_SWITCH'
+        elif (self.cause == 1):
+            self.cause = 'SCHEDULE_TIMER'
+        elif (self.cause == 2):
+            self.cause = 'GEOFENCE'
+        elif (self.cause == 3):
+            self.cause = 'INACTIVITY_TIMEOUT'
+        else:
+            self.cause = 'UNKNOWN'
+
+
+class LogItem_Bluetooth_Connected(LogItem):
+    tag = 0x0C
+    name = 'BluetoothConnected'
+
+
+class LogItem_Bluetooth_Disconnected(LogItem):
+    tag = 0x0D
+    name = 'BluetoothDisconnected'
