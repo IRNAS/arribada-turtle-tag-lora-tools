@@ -319,11 +319,11 @@ class ConfigItem_GPS_ScheduledAquisitionNoFixTimeout(ConfigItem):
 class ConfigItem_GPS_LastKnownPosition(ConfigItem):
     tag = 0x0007
     path = 'gps.lastKnownPosition'
-    params = ['iTOW', 'longitude', 'latitude', 'height', 'accuracyHorizontal', 'accuracyVertical']
+    params = ['iTOW', 'longitude', 'latitude', 'height', 'accuracyHorizontal', 'accuracyVertical', 'year', 'month', 'day', 'hours', 'minutes', 'seconds']
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'IlllII', self.params, **kwargs)
+        ConfigItem.__init__(self, b'IlllIIH5B', self.params, **kwargs)
 
     def pack(self):
         longitude = self.longitude
