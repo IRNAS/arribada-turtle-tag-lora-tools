@@ -277,7 +277,7 @@ class ConfigItem_GPS_Mode(ConfigItem):
 
 
 class ConfigItem_GPS_ScheduledAquisitionInterval(ConfigItem):
-    tag = 0x0004
+    tag = 0x0003
     path = 'gps'
     params = ['scheduledAquisitionInterval']
     json_params = params
@@ -287,7 +287,7 @@ class ConfigItem_GPS_ScheduledAquisitionInterval(ConfigItem):
 
 
 class ConfigItem_GPS_MaximumAquisitionTime(ConfigItem):
-    tag = 0x0005
+    tag = 0x0004
     path = 'gps'
     params = ['maximumAquisitionTime']
     json_params = params
@@ -297,7 +297,7 @@ class ConfigItem_GPS_MaximumAquisitionTime(ConfigItem):
 
 
 class ConfigItem_GPS_ScheduledAquisitionNoFixTimeout(ConfigItem):
-    tag = 0x0006
+    tag = 0x0005
     path = 'gps'
     params = ['scheduledAquisitionNoFixTimeout']
     json_params = params
@@ -307,7 +307,7 @@ class ConfigItem_GPS_ScheduledAquisitionNoFixTimeout(ConfigItem):
 
 
 class ConfigItem_GPS_LastKnownPosition(ConfigItem):
-    tag = 0x0007
+    tag = 0x0006
     path = 'gps.lastKnownPosition'
     params = ['iTOW', 'longitude', 'latitude', 'height', 'accuracyHorizontal', 'accuracyVertical', 'year', 'month', 'day', 'hours', 'minutes', 'seconds']
     json_params = params
