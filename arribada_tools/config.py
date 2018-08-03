@@ -276,16 +276,6 @@ class ConfigItem_GPS_Mode(ConfigItem):
             self.mode = 'UNKNOWN'
 
 
-class ConfigItem_GPS_UARTBaudRate(ConfigItem):
-    tag = 0x0003
-    path = 'gps'
-    params = ['uartBaudRate']
-    json_params = params
-
-    def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'L', self.params, **kwargs)
-
-
 class ConfigItem_GPS_ScheduledAquisitionInterval(ConfigItem):
     tag = 0x0004
     path = 'gps'
