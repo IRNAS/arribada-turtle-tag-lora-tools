@@ -2,6 +2,7 @@ from array import array
 import binascii
 import struct
 import os
+import logging
 from bluepy.btle import UUID, Peripheral, DefaultDelegate
 
 config_service_uuid = UUID('04831523-6c9d-6ca9-5d41-03ad4fff4abb')
@@ -9,6 +10,8 @@ config_char_uuid = UUID('04831524-6c9d-6ca9-5d41-03ad4fff4abb')
 MAX_PACKET_SIZE = 20
 
 HCI_DEV = 0 if 'HCI_DEV' not in os.environ else int(os.environ['HCI_DEV'])
+
+logger = logging.getLogger(__name__)
 
 
 class Buffer():
@@ -34,7 +37,7 @@ class MyDelegate(DefaultDelegate):
         self._buffer = buf
 
     def handleNotification(self, cHandle, data):
-        #print "Received: ", binascii.hexlify(array('B', data))
+        logger.debug("Received: %s", binascii.hexlify(array('B', data)))
         self._buffer.write(data)
 
 
@@ -59,7 +62,7 @@ class BluetoothTracker():
         while data: # Send data in discrete packets
             bytesToSend = min(len(data), MAX_PACKET_SIZE)
             self._config_char.write(data[:bytesToSend])
-            #print "Transmit: ", binascii.hexlify(array('B', data[:bytesToSend]))
+            logger.debug("Transmit: %s", binascii.hexlify(array('B', data[:bytesToSend])))
             data = data[bytesToSend:]
 
     def read(self, timeout=0):
