@@ -38,7 +38,6 @@ setup(
     ],
     scripts=[
         'tests/tracker_config',
-        'tests/gps_baud',
         'tests/gps_almanac',
         'tests/gps_ascii_config',
         'tests/log_parse',
