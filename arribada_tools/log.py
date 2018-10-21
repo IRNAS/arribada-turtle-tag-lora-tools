@@ -323,3 +323,13 @@ class LogItem_Bluetooth_Connected(LogItem):
 class LogItem_Bluetooth_Disconnected(LogItem):
     tag = 0x0D
     name = 'BluetoothDisconnected'
+
+
+class LogItem_GPS_On(LogItem):
+    tag = 0x0E
+    name = 'GPSOn'
+
+
+class LogItem_GPS_Off(LogItem):
+    tag = 0x0F
+    name = 'GPSOff'
