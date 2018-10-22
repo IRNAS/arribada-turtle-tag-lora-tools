@@ -59,10 +59,10 @@ HCI_DEV = 0 if 'HCI_DEV' not in os.environ else int(os.environ['HCI_DEV'])
 
 
 if args.white_list:
-    whitelist_devices = args.white_list.read().split()
+    whitelist_devices = [x.lower() for x in args.white_list.read().split()]
 
 if args.black_list:
-    blacklist_devices = args.black_list.read().split()
+    blacklist_devices = [x.lower() for x in args.black_list.read().split()]
 
 
 class Scan(object):
