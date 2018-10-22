@@ -1,0 +1,326 @@
+#!/usr/bin/python2.7
+
+import argparse
+import logging
+import sys
+import os
+import json
+import datetime
+import time
+from arribada_tools import backend, interface, config, log, __version__
+from bluepy.btle import Scanner
+
+
+logger = logging.getLogger(__name__)
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--version', action='store_true', required=False)
+parser.add_argument('--debug', action='store_true', required=False)
+parser.add_argument('--black_list', type=argparse.FileType('r'), required=False)
+parser.add_argument('--white_list', type=argparse.FileType('r'), required=False)
+parser.add_argument('--firmware_update_main', type=argparse.FileType('rb'), required=False)
+parser.add_argument('--firmware_update_ble', type=argparse.FileType('rb'), required=False)
+parser.add_argument('--log_skip_download', action='store_true', required=False)
+parser.add_argument('--log_erase', action='store_true', required=False)
+parser.add_argument('--reset', action='store_true', required=False)
+parser.add_argument('--config', type=argparse.FileType('r'), required=False)
+parser.add_argument('--connection_retry', default=3, type=int, required=False)
+parser.add_argument('--connection_timeout', default=3.0, type=float, required=False)
+parser.add_argument('--scan_timeout', default=15, type=int, required=False)
+
+
+
+args = parser.parse_args()
+
+if not any(vars(args).values()):
+    parser.print_help()
+    sys.exit()
+
+if args.version:
+    print 'Version:', __version__
+    sys.exit()
+
+if args.debug:
+    logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.DEBUG)
+else:
+    logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.INFO)
+
+
+device_dict = {}
+discovered_devices = []
+whitelist_devices = []
+blacklist_devices = []
+completed_devices = []
+
+
+SCAN_NAME = 'Arribada_Tracker'
+HCI_DEV = 0 if 'HCI_DEV' not in os.environ else int(os.environ['HCI_DEV'])
+
+
+if args.white_list:
+    whitelist_devices = parser.white_list.read().split()
+
+if args.black_list:
+    blacklist_devices = parser.white_list.read().split()
+
+
+class Scan(object):
+    def __init__(self, timeout):
+        self._scanner = Scanner(HCI_DEV)
+        self._timeout = timeout
+
+    def scan(self):
+        devices = []
+        timeout = self._timeout
+        while timeout > 0 and not devices:
+            all_devices = self._scanner.scan(1)
+            devices = []
+            for dev in all_devices:
+                dev_addr = dev.addr
+                for (_, desc, value) in dev.getScanData():
+                    if desc == 'Complete Local Name' and value == SCAN_NAME and \
+                        dev_addr not in discovered_devices and \
+                        dev_addr not in completed_devices and \
+                        dev_addr not in blacklist_devices:
+                        devices = devices + [ dev_addr ]
+            if whitelist_devices:
+                devices = [ dev for dev in devices and dev in whitelist_devices ]
+            timeout = timeout - 1
+        return list(set(devices))
+
+
+
+class Device(object):
+    def __init__(self, dev_addr):
+        self._dev_addr = dev_addr
+        self._connection_retries = args.connection_retry
+        self._reset_flag = args.reset
+        self._log_download_flag = not args.log_skip_download
+        self._log_download_success = args.log_skip_download
+        self._log_erase_flag = args.log_erase
+        self._get_status_flag = True
+        self._config_flag = args.config
+        self._fw_main_flag = args.firmware_update_main
+        self._fw_ble_flag = args.firmware_update_ble
+        self._backend = None
+
+    def _all_tasks_complete(self):
+        return not self._log_download_flag and \
+            not self._reset_flag and \
+            not self._get_status_flag and \
+            not self._log_erase_flag and \
+            not self._get_status_flag and \
+            not self._config_flag and \
+            not self._fw_main_flag and \
+            not self._fw_ble_flag
+
+    def _get_status_task(self, cfg):
+        logger.info('Reading status from device=%s', self._dev_addr)
+        try:
+            status = cfg.get_status()
+        except:
+            logger.error('Failed to read status from device=%s', self._dev_addr)
+            return
+
+        try:
+            battery = cfg.get_battery_status()
+        except:
+            logger.error('Failed to read battery status from device=%s', self._dev_addr)
+            return
+
+        try:
+            log_file_size = json.loads(cfg.read_json_configuration(tag=config.ConfigItem_Logging_FileSize.tag))
+        except:
+            logger.error('Failed to read log file size from device=%s', self._dev_addr)
+            return
+
+        logger.info('Status for device=%s: status=%s battery=%s log_file=%s',
+                    self._dev_addr, status, battery, log_file_size['logging'])
+
+        # Mark task as complete
+        self._get_status_flag = False
+
+    def _log_download_task(self, cfg):
+        logger.info('Downloading log file from device=%s', self._dev_addr)
+        try:
+            now = time.time()
+            ts = datetime.datetime.fromtimestamp(now).strftime('%d%m%Y_%H%M%S')
+            filename = 'ble_auto_%s_%s_log_file.bin' % (ts, self._dev_addr.replace(':', ''))
+            log_file = open(filename, 'wb')
+            log_file.write(cfg.read_log_file(0, 0))
+            log_file.close()
+            self._log_filename = filename
+        except Exception as e:
+            logger.error('Error downloading log file for device=%s', self._dev_addr)
+            if type(e) is interface.ExceptionBackendCommsError and \
+                e.args[0] == 'CMD_ERROR_FILE_NOT_FOUND':
+                    logger.error('Log file does not exist on device=%s', self._dev_addr)
+                    self._log_download_flag = False  # Don't retry
+            return
+
+        self._log_download_flag = False
+        self._log_download_success = True
+
+    def _log_erase_task(self, cfg):
+        logger.info('Erase log file from device=%s', self._dev_addr)
+        try:
+            cfg.erase_log_file()
+        except Exception as e:
+            logger.error('Error erasing log file for device=%s', self._dev_addr)
+            if type(e) is interface.ExceptionBackendCommsError and \
+                e.args[0] == 'CMD_ERROR_FILE_NOT_FOUND':
+                    logger.error('Log file does not exist on device=%s', self._dev_addr)
+                    self._log_erase_flag = False  # Don't retry
+            return
+        self._log_erase_flag = False
+
+    def _config_task(self, cfg):
+        logger.info('Writing configuration file to device=%s', self._dev_addr)
+        try:
+            cfg.write_json_configuration(args.config.read())
+            cfg.save_configuration()
+        except:
+            logger.error('Error writing configuration file to device=%s', self._dev_addr)
+            return
+
+        self._config_flag = False
+
+    def _reset_task(self, cfg):
+        try:
+            cfg.reset('STM32')
+        except:
+            pass
+        self._reset_flag = False
+
+    def _fw_upgrade_main_task(self, cfg):
+        logger.info('Updating STM32 firmware on device=%s', self._dev_addr)
+        try:
+            cfg.fw_upgrade('STM32', args.firmware_update_main.firmware.read())
+        except:
+            logger.error('Error updating STM32 firmware on device=%s', self._dev_addr)
+            return
+        logger.info('STM32 upgrade completed successfully!')
+        self._fw_main_flag = False
+
+    def _fw_update_ble_task(self, cfg):
+        logger.info('Updating BLE firmware on device=%s', self._dev_addr)
+        try:
+            cfg.fw_upgrade('BLE', args.firmware_update_ble.firmware.read())
+        except:
+            logger.error('Error updating BLE firmware on device=%s', self._dev_addr)
+            return
+        logger.info('BLE upgrade completed successfully!')
+        self._fw_ble_flag = False
+
+    def _process_tasks(self):
+        cfg = interface.ConfigInterface(self._backend)
+
+        if self._get_status_flag:
+            self._get_status_task(cfg)
+
+        if self._log_download_flag:
+            self._log_download_task(cfg)
+
+        if self._log_erase_flag and not self._log_download_flag:
+            self._log_erase_task(cfg)
+
+        if self._config_flag:
+            self._config_task(cfg)
+
+        if self._fw_main_flag:
+            self._fw_update_main_task(cfg)
+            # Always return immediately since STM32 will reset
+            return
+
+        if self._fw_ble_flag:
+            self._fw_update_ble_task(cfg)
+            # Always return immediately since nRF52 will reset
+            return
+
+        if self._reset_flag:
+            self._reset_task(cfg)
+
+
+    def _disconnect(self):
+        if self._backend:
+            try:
+                self._backend.cleanup()
+            except:
+                pass
+
+            self._backend = None
+
+    def iterate(self):
+
+        if self._connection_retries == 0 or self._all_tasks_complete():
+            return True
+
+        if not self._backend:
+            try:
+                logger.info('Connecting to device=%s', self._dev_addr)
+                self._backend = backend.BackendBluetooth(dev_addr=self._dev_addr,
+                                                         conn_timeout=args.connection_timeout)
+            except:
+                logger.info('Error connecting to device=%s', self._dev_addr)
+                self._backend = None
+
+        self._connection_retries = self._connection_retries - 1
+
+        if self._backend:
+            logger.info('Processing tasks for device=%s', self._dev_addr)
+            self._process_tasks()
+            logger.info('Disconnecting from device=%s', self._dev_addr)
+            self._disconnect()
+
+        return self._connection_retries == 0 or self._all_tasks_complete()
+
+
+scanning_task = Scan(args.scan_timeout)
+
+while True:
+    # Scan task
+    logger.info('Scanning for new devices...')
+    new_devices = scanning_task.scan()
+    for dev in new_devices:
+        logger.info('Discovered device=%s', dev)
+        device_dict[dev] = Device(dev)
+        discovered_devices = discovered_devices + [ dev ]
+
+    # Service task
+    if discovered_devices:
+        curr_dev_addr = discovered_devices[0]
+        device = device_dict[curr_dev_addr]
+        logger.debug('Iterating device=%s', curr_dev_addr)
+        if device.iterate():
+            discovered_devices = discovered_devices[1:]
+            completed_devices = completed_devices + [ curr_dev_addr ]
+    else:
+        # No more discovered devices to service
+        logger.info('No new devices discovered')
+        break
+
+logger.info('Post-processing devices...')
+
+for dev in completed_devices:
+    device = device_dict[dev]
+    if not args.log_skip_download and device._log_download_success:
+        logger.info('Converting log file binary to JSON for device=%s', device._dev_addr)
+        with open(device._log_filename, 'rb') as log_file:
+            data = log_file.read()
+            objects = log.decode_all(data)
+            del data # Mark unused data as deletable
+            log_file.close()
+            filename = device._log_filename[:-3] + 'json'
+            with open(filename, 'w') as log_file:
+                for i in objects:
+                    if i.name == 'LogStart' or i.name == 'LogEnd':
+                        pass
+                    else:
+                        d = {}
+                        d[i.name] = {}
+                        if hasattr(i, 'fields'):
+                            for j in i.fields:
+                                d[i.name][j] = getattr(i, j)
+                        log_file.write(json.dumps(d) + '\n')
+                log_file.close()

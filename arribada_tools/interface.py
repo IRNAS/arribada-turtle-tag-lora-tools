@@ -14,13 +14,13 @@ class ExceptionBackendCommsError(Exception):
 def resp_error_handler(req, resp, expected_resp=None):
     if not resp:
         logger.error('%s got no response - expected %s', req, expected_resp)
-        raise ExceptionBackendCommsError
+        raise ExceptionBackendCommsError('TIMEOUT_ERROR')
     elif expected_resp and expected_resp != resp.name:
         logger.error('%s got unexpected response %s - expected %s', req, resp.name, expected_resp)
-        raise ExceptionBackendCommsError
+        raise ExceptionBackendCommsError('UNEXPECTED_RESPONSE_ERROR')
     elif resp.error_code:
         logger.error('%s got response %s with unexpected error code: %s', req, resp.name, message.str_error(resp.error_code))
-        raise ExceptionBackendCommsError
+        raise ExceptionBackendCommsError(message.str_error(resp.error_code))
 
 
 class ConfigInterface(object):

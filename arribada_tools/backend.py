@@ -32,9 +32,9 @@ class _Backend(object):
 
 class BackendBluetooth(_Backend):
 
-    def __init__(self, dev_addr=None):
+    def __init__(self, dev_addr=None, conn_timeout=None):
         try:
-            self._ble = BluetoothTracker(dev_addr)
+            self._ble = BluetoothTracker(dev_addr, conn_timeout=conn_timeout)
         except:
             raise ExceptionBackendNotFound
 
@@ -64,6 +64,9 @@ class BackendBluetooth(_Backend):
 
     def read(self, length, timeout=None):
         return self._ble.readFull(length, timeout)
+
+    def cleanup(self):
+        self._ble.cleanup()
 
 
 class BackendUsb(_Backend):
