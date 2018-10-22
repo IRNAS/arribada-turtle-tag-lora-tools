@@ -59,10 +59,10 @@ HCI_DEV = 0 if 'HCI_DEV' not in os.environ else int(os.environ['HCI_DEV'])
 
 
 if args.white_list:
-    whitelist_devices = parser.white_list.read().split()
+    whitelist_devices = args.white_list.read().split()
 
 if args.black_list:
-    blacklist_devices = parser.white_list.read().split()
+    blacklist_devices = args.black_list.read().split()
 
 
 class Scan(object):
@@ -85,7 +85,7 @@ class Scan(object):
                         dev_addr not in blacklist_devices:
                         devices = devices + [ dev_addr ]
             if whitelist_devices:
-                devices = [ dev for dev in devices and dev in whitelist_devices ]
+                devices = [ dev for dev in devices if dev in whitelist_devices ]
             timeout = timeout - 1
         return list(set(devices))
 
