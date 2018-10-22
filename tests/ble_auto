@@ -26,7 +26,7 @@ parser.add_argument('--log_erase', action='store_true', required=False)
 parser.add_argument('--reset', action='store_true', required=False)
 parser.add_argument('--config', type=argparse.FileType('r'), required=False)
 parser.add_argument('--connection_retry', default=3, type=int, required=False)
-parser.add_argument('--connection_timeout', default=3.0, type=float, required=False)
+parser.add_argument('--connection_timeout', default=10.0, type=float, required=False)
 parser.add_argument('--scan_timeout', default=15, type=int, required=False)
 
 
@@ -193,20 +193,21 @@ class Device(object):
             pass
         self._reset_flag = False
 
-    def _fw_upgrade_main_task(self, cfg):
+    def _fw_update_main_task(self, cfg):
         logger.info('Updating STM32 firmware on device=%s', self._dev_addr)
         try:
-            cfg.fw_upgrade('STM32', args.firmware_update_main.firmware.read())
+            cfg.fw_upgrade('STM32', args.firmware_update_main.read())
         except:
             logger.error('Error updating STM32 firmware on device=%s', self._dev_addr)
             return
         logger.info('STM32 upgrade completed successfully!')
+        self._get_status_flag = True
         self._fw_main_flag = False
 
     def _fw_update_ble_task(self, cfg):
         logger.info('Updating BLE firmware on device=%s', self._dev_addr)
         try:
-            cfg.fw_upgrade('BLE', args.firmware_update_ble.firmware.read())
+            cfg.fw_upgrade('BLE', args.firmware_update_ble.read())
         except:
             logger.error('Error updating BLE firmware on device=%s', self._dev_addr)
             return
@@ -218,6 +219,8 @@ class Device(object):
 
         if self._get_status_flag:
             self._get_status_task(cfg)
+            if self._get_status_flag:
+                return  # Must have valid status to proceed
 
         if self._log_download_flag:
             self._log_download_task(cfg)
@@ -279,13 +282,14 @@ class Device(object):
 scanning_task = Scan(args.scan_timeout)
 
 while True:
-    # Scan task
-    logger.info('Scanning for new devices...')
-    new_devices = scanning_task.scan()
-    for dev in new_devices:
-        logger.info('Discovered device=%s', dev)
-        device_dict[dev] = Device(dev)
-        discovered_devices = discovered_devices + [ dev ]
+    if not discovered_devices:
+        # Scan task
+        logger.info('Scanning for new devices...')
+        new_devices = scanning_task.scan()
+        for dev in new_devices:
+            logger.info('Discovered device=%s', dev)
+            device_dict[dev] = Device(dev)
+            discovered_devices = discovered_devices + [ dev ]
 
     # Service task
     if discovered_devices:
