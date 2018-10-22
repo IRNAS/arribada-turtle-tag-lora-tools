@@ -187,6 +187,7 @@ class Device(object):
         self._config_flag = False
 
     def _reset_task(self, cfg):
+        logger.info('Resetting device=%s', self._dev_addr)
         try:
             cfg.reset('STM32')
         except:
