@@ -42,6 +42,7 @@ setup(
         'tests/gps_ascii_config',
         'tests/log_parse',
         'tests/ble_scan',
+        'tests/ble_auto',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
