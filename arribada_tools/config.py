@@ -7,7 +7,7 @@ import binascii
 import datetime
 import dateutil.parser
 
-__version__ = 3
+__version__ = 4
 
 logger = logging.getLogger(__name__)
 
@@ -341,6 +341,16 @@ class ConfigItem_GPS_LastKnownPosition(ConfigItem):
         self.height = self.height / 1000.0
         self.accuracyHorizontal = self.accuracyHorizontal / 1000.0
         self.accuracyVertical = self.accuracyVertical / 1000.0
+
+
+class ConfigItem_GPS_VeryFirstFixHoldTime(ConfigItem):
+    tag = 0x0007
+    path = 'gps'
+    params = ['veryFirstFixHoldTime']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
 class ConfigItem_saltwaterSwitch_LogEnable(ConfigItem):
