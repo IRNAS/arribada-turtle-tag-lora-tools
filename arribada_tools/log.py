@@ -333,3 +333,31 @@ class LogItem_GPS_On(LogItem):
 class LogItem_GPS_Off(LogItem):
     tag = 0x0F
     name = 'GPSOff'
+
+
+class LogItem_SoftWatchdog(LogItem):
+    tag = 0x10
+    name = 'SoftWatchdog'
+
+    fields = [ 'watchdogAddress' ]
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'I', self.fields, **kwargs)
+
+    def unpack(self, data):
+        LogItem.unpack(self, data)
+        self.watchdogAddress = hex(self.watchdogAddress)
+
+
+class LogItem_Startup(LogItem):
+    tag = 0x11
+    name = 'Startup'
+
+    fields = [ 'cause' ]
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'I', self.fields, **kwargs)
+
+    def unpack(self, data):
+        LogItem.unpack(self, data)
+        self.cause = hex(self.cause)
