@@ -360,7 +360,7 @@ class ConfigItem_GPS_LogDebugEnable(ConfigItem):
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+        ConfigItem.__init__(self, b'?', self.params, **kwargs)
 
 
 class ConfigItem_saltwaterSwitch_LogEnable(ConfigItem):
