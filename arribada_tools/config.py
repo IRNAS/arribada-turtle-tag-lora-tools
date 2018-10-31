@@ -353,6 +353,16 @@ class ConfigItem_GPS_VeryFirstFixHoldTime(ConfigItem):
         ConfigItem.__init__(self, b'H', self.params, **kwargs)
 
 
+class ConfigItem_GPS_LogDebugEnable(ConfigItem):
+    tag = 0x0008
+    path = 'gps'
+    params = ['logDebugEnable']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'H', self.params, **kwargs)
+
+
 class ConfigItem_saltwaterSwitch_LogEnable(ConfigItem):
     tag = 0x0800
     path = 'saltwaterSwitch'
