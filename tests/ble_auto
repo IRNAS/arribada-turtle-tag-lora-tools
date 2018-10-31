@@ -69,6 +69,28 @@ if args.black_list:
     blacklist_devices = [x.lower() for x in args.black_list.read().split()]
 
 
+gps_almanac_data = None
+gps_config_data = None
+config_data = None
+fw_main_data = None
+fw_ble_data = None
+
+if args.gps_almanac:
+    gps_almanac_data = args.gps_almanac.read()
+
+if args.gps_config:
+    gps_config_data = args.gps_config.read()
+
+if args.config:
+    config_data = args.config.read()
+
+if args.firmware_update_main:
+    fw_main_data = args.firmware_update_main.read()
+
+if args.firmware_update_ble:
+    fw_ble_data = args.firmware_update_ble
+
+
 class Scan(object):
     def __init__(self, timeout):
         self._scanner = Scanner(HCI_DEV)
@@ -101,16 +123,16 @@ class Device(object):
         self._connection_retries = args.connection_retry
         self._reset_flag = args.reset
         self._set_datetime_flag = args.datetime
-        self._gps_almanac_flag = args.gps_almanac.read() if args.gps_almanac != None else False
-        self._gps_config_flag = args.gps_config.read() if args.gps_config != None else False
+        self._gps_almanac_flag = gps_almanac_data
+        self._gps_config_flag = gps_config_data
         self._log_download_flag = not args.log_skip_download
         self._log_download_success = args.log_skip_download
         self._log_erase_flag = args.log_erase
         self._log_create_flag = args.log_create
         self._get_status_flag = True
-        self._config_flag = args.config.read() if args.config != None else False
-        self._fw_main_flag = args.firmware_update_main.read() if args.firmware_update_main != None else False
-        self._fw_ble_flag = args.firmware_update_ble.read() if args.firmware_update_ble != None else False
+        self._config_flag = config_data
+        self._fw_main_flag = fw_main_data
+        self._fw_ble_flag = fw_ble_data
         self._wait_for_hard_reset = False
         self._backend = None
 
