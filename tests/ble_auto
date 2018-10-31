@@ -26,6 +26,7 @@ parser.add_argument('--firmware_update_main', type=argparse.FileType('rb'), requ
 parser.add_argument('--firmware_update_ble', type=argparse.FileType('rb'), required=False)
 parser.add_argument('--log_skip_download', action='store_true', required=False)
 parser.add_argument('--log_erase', action='store_true', required=False)
+parser.add_argument('--log_create', action='store_true', required=False)
 parser.add_argument('--reset', action='store_true', required=False)
 parser.add_argument('--config', type=argparse.FileType('r'), required=False)
 parser.add_argument('--connection_retry', default=3, type=int, required=False)
@@ -105,6 +106,7 @@ class Device(object):
         self._log_download_flag = not args.log_skip_download
         self._log_download_success = args.log_skip_download
         self._log_erase_flag = args.log_erase
+        self._log_create_flag = args.log_create
         self._get_status_flag = True
         self._config_flag = args.config.read() if args.config != None else False
         self._fw_main_flag = args.firmware_update_main.read() if args.firmware_update_main != None else False
@@ -120,6 +122,7 @@ class Device(object):
             not self._gps_almanac_flag and \
             not self._get_status_flag and \
             not self._log_erase_flag and \
+            not self._log_create_flag and \
             not self._get_status_flag and \
             not self._config_flag and \
             not self._fw_main_flag and \
@@ -191,23 +194,38 @@ class Device(object):
 
         try:
             log_file_size = json.loads(cfg.read_json_configuration(tag=config.ConfigItem_Logging_FileSize.tag))
+            log_file_size = log_file_size['logging']
         except:
             logger.error('Failed to read log file size from device=%s', self._dev_addr)
             return 1
 
         try:
             last_known_pos = json.loads(cfg.read_json_configuration(tag=config.ConfigItem_GPS_LastKnownPosition.tag))
+            last_known_pos = last_known_pos['gps']['lastKnownPosition']
         except Exception as e:
             if type(e) is interface.ExceptionBackendCommsError and \
                 e.args[0] == 'CMD_ERROR_CONFIG_TAG_NOT_SET':
                 logger.warn('Last known GPS location is not set on device=%s', self._dev_addr)
-                last_known_pos = '{}'
+                last_known_pos = {}
             else:
                 logger.error('Failed to read GPS last known position from device=%s', self._dev_addr)
                 return 1
 
-        logger.info('Status for device=%s: status=%s battery=%s log_file=%s last_pos=%s',
-                    self._dev_addr, status, battery, log_file_size['logging'], last_known_pos['gps']['lastKnownPosition'])
+        try:
+            sys_device_id = json.loads(cfg.read_json_configuration(tag=config.ConfigItem_System_DeviceIdentifier.tag))
+            sys_device_id = sys_device_id['system']['deviceIdentifier']
+        except Exception as e:
+            if type(e) is interface.ExceptionBackendCommsError and \
+                e.args[0] == 'CMD_ERROR_CONFIG_TAG_NOT_SET':
+                logger.warn('System device ID is not set on device=%s', self._dev_addr)
+                sys_device_id = 'null'
+            else:
+                logger.error('Failed to read system device ID from device=%s', self._dev_addr)
+                return 1
+
+        logger.info('Status for device=%s: id=%s status=%s battery=%s log_file=%s last_pos=%s',
+                    self._dev_addr, sys_device_id, status, battery, log_file_size,
+                    last_known_pos)
 
         # Mark task as complete
         self._get_status_flag = False
@@ -251,6 +269,21 @@ class Device(object):
         self._log_erase_flag = False
         return 0
 
+    def _log_create_task(self, cfg):
+        logger.info('Creating log file on device=%s', self._dev_addr)
+        try:
+            cfg.create_log_file(file_type='LINEAR')
+        except Exception as e:
+            logger.error('Error creating log file for device=%s', self._dev_addr)
+            if type(e) is interface.ExceptionBackendCommsError and \
+                e.args[0] == 'CMD_ERROR_FILE_ALREADY_EXISTS':
+                    logger.error('Log file already exists on device=%s', self._dev_addr)
+                    self._log_create_flag = False  # Don't retry
+                    return 0
+            return 1
+        self._log_create_flag = False
+        return 0
+
     def _config_task(self, cfg):
         logger.info('Writing configuration file to device=%s', self._dev_addr)
         try:
@@ -277,7 +310,7 @@ class Device(object):
         try:
             cfg.reset('STM32')
         except:
-            return 1
+            pass
         self._reset_flag = False
         self._wait_for_hard_reset = True
         return 0
@@ -322,6 +355,9 @@ class Device(object):
 
         if self._log_erase_flag and not self._log_download_flag:
             error_flag |= self._log_erase_task(cfg)
+
+        if self._log_create_flag:
+            error_flag |= self._log_create_task(cfg)
 
         if self._set_datetime_flag:
             error_flag |= self._set_datetime_task(cfg)
