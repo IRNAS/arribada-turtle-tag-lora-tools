@@ -309,6 +309,7 @@ class Device(object):
     def _config_task(self, cfg):
         logger.info('Writing configuration file to device=%s', self._dev_addr)
         try:
+            cfg.erase_configuration()
             cfg.write_json_configuration(self._config_flag)
             cfg.save_configuration()
         except:
@@ -444,7 +445,7 @@ class Device(object):
         if self._wait_for_hard_reset and not self._all_tasks_complete() and self._connection_retries > 0:
             logger.info('Waiting for hard reset to complete on device=%s', self._dev_addr)
             self._wait_for_hard_reset = False
-            time.sleep(5)
+            time.sleep(10)
 
         return self._connection_retries == 0 or self._all_tasks_complete()
 
