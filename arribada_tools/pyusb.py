@@ -111,15 +111,16 @@ EP_MSG_IN = 1
 
 class UsbHost():
 
-    VENDOR_ID  = 0x0483     # STMicroelectronics
-    PRODUCT_ID = 0x0100     # Seemingly spare for now
+    MANUFACTURER = "Arribada"
+    PRODUCT      = "GPS Tracker"
 
     dev = None
 
     def __init__(self):
         self._endpoints = []
         dev = usb.core.find(find_all=True)
-        devs = [cfg for cfg in dev if cfg.idVendor == UsbHost.VENDOR_ID and cfg.idProduct == UsbHost.PRODUCT_ID]
+
+        devs = [cfg for cfg in dev if usb.util.get_string(cfg, cfg.iManufacturer) == UsbHost.MANUFACTURER and usb.util.get_string(cfg, cfg.iProduct) == UsbHost.PRODUCT]
         if not devs:
             raise ExceptionUsbDeviceNotFound
         # Allow USB_INDEX environment variable to set which device in the
