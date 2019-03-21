@@ -90,9 +90,8 @@ def lambda_handler(event, context):
             timestamp = None
 
     if iot_gps_messages:
-        #resp = iot_client.batch_put_message(channelName='arribada_gps_location', messages=iot_gps_messages)
-        #logger.debug('resp=%s', resp)
-        pass
+        resp = iot_client.batch_put_message(channelName='arribada_gps_location', messages=iot_gps_messages)
+        logger.debug('resp=%s', resp)
 
     if iot_battery_messages:
         resp = iot_client.batch_put_message(channelName='arribada_battery_charge', messages=iot_battery_messages)

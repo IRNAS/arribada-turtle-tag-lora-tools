@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  ArribadaPushLoggingIoTAnalyticsFunction:
+    Events:
+      IoTLoggingMessage:
+        Properties:
+          Sql: SELECT encode(*, 'base64') AS data, timestamp() AS ts, topic(1) as
+            thing_name FROM '+/logging'
+        Type: IOTRule
+    Properties:
+      CodeUri: s3://icoteq-test/d5b4f3159bd85a0a9aed385a69ebfd4f
+      Handler: app.lambda_handler
+      Policies:
+      - AWSLambdaExecute
+      - Statement:
+        - Action:
+          - logs:CreateLogGroup
+          Effect: Allow
+          Resource: arn:aws:logs:us-west-2:302222748002:*
+        - Action:
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Effect: Allow
+          Resource: arn:aws:logs:us-west-2:302222748002:log-group:/aws/lambda/ArribadaPushLoggingIoTAnalyticsFunction:*
+        - Action:
+          - iotanalytics:BatchPutMessage
+          Effect: Allow
+          Resource: arn:aws:dynamodb:us-west-2:302222748002:channel/*
+        Version: '2012-10-17'
+      Runtime: python2.7
+      Timeout: 10
+    Type: AWS::Serverless::Function
+Transform: AWS::Serverless-2016-10-31

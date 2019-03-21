@@ -12,16 +12,16 @@ Resources:
             - Effect: Allow
               Action:
                 - logs:CreateLogGroup
-              Resource: arn:aws:logs:us-west-2:302222748002:*
+              Resource: *
             - Effect: Allow
               Action:
                 - logs:CreateLogStream
                 - logs:PutLogEvents
-              Resource: arn:aws:logs:us-west-2:302222748002:log-group:/aws/lambda/ArribadaPushLoggingIoTAnalyticsFunction:*
+              Resource: *
             - Effect: Allow
               Action:
                 - iotanalytics:BatchPutMessage
-              Resource: arn:aws:dynamodb:us-west-2:302222748002:channel/*
+              Resource: *
 
       Handler: app.lambda_handler
       Runtime: python2.7
