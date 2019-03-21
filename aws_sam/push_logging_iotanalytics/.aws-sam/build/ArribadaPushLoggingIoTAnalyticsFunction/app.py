@@ -2,6 +2,7 @@ import logging
 import base64
 import boto3
 import log
+import json
 import uuid
 import datetime
 import time
@@ -23,13 +24,16 @@ def lambda_handler(event, context):
     log_entries = log.decode_all(log_data)
     logger.debug('Got %s log entries', len(log_entries))
 
-    db_client = boto3.client('dynamodb')
+    iot_client = boto3.client('iotanalytics')
 
     # Keep track of log entries of interest
     gps_pos = None
     ttff = None
     timestamp = None
     battery = None
+
+    iot_gps_messages = []
+    iot_battery_messages = []
 
     for i in log_entries:
 
@@ -45,21 +49,22 @@ def lambda_handler(event, context):
 
         if gps_pos is not None and timestamp is not None:
             uid = uuid.uuid4()
-            entry = { 'uuid': { 'S': str(uid) },
-                      'thing_name': { 'S': thing_name },
-                      'timestamp': { 'N': str(timestamp) },
-                      'longitude': { 'N': str(gps_pos.longitude) },                      
-                      'latitude': { 'N': str(gps_pos.latitude) },
-                      'height': { 'N': str(gps_pos.height) },
-                      'h_acc': { 'N': str(gps_pos.accuracyHorizontal) },
-                      'v_acc': { 'N': str(gps_pos.accuracyVertical) }
+            entry = { 'thing_name': thing_name,
+                      'timestamp': timestamp,
+                      'longitude': gps_pos.longitude,
+                      'latitude': gps_pos.latitude,
+                      'height': gps_pos.height,
+                      'h_acc': gps_pos.accuracyHorizontal,
+                      'v_acc': gps_pos.accuracyVertical
             }
             if ttff:
-                entry['ttff'] = { 'N': str((ttff.ttff / 1000.0)) }
-            #logger.debug('GPS Location: %s', entry)
+                entry['ttff'] = ttff.ttff / 1000.0
 
-            resp = db_client.put_item(TableName='ArribadaGPSLocation', Item=entry)
-            logger.debug('resp=%s', resp)
+            #logger.debug('GPS Location: %s', entry)
+            iot_gps_messages.append({
+                'messageId': str(uid),
+                'payload': json.dumps(entry)
+                })
 
             # Reset fields
             gps_pos = None
@@ -69,19 +74,29 @@ def lambda_handler(event, context):
         if battery is not None and timestamp is not None:
             # Create table entry            
             uid = uuid.uuid4()
-            entry = { 'uuid': { 'S': str(uid) },
-                      'thing_name': { 'S': thing_name },
-                      'timestmap': { 'N': str(timestamp) },
-                      'battery_level': { 'N': str(battery.charge) }
+            entry = { 'thing_name': thing_name,
+                      'timestmap': timestamp,
+                      'battery_level': battery.charge
             }
             #logger.debug('Battery: %s', entry)
 
-            resp = db_client.put_item(TableName='ArribadaBatteryCharge', Item=entry)
-            logger.debug('resp=%s', resp)
+            iot_battery_messages.append({
+                'messageId': str(uid),
+                'payload': json.dumps(entry)
+                })
 
             # Reset fields
             battery = None      
             timestamp = None
+
+    if iot_gps_messages:
+        #resp = iot_client.batch_put_message(channelName='arribada_gps_location', messages=iot_gps_messages)
+        #logger.debug('resp=%s', resp)
+        pass
+
+    if iot_battery_messages:
+        resp = iot_client.batch_put_message(channelName='arribada_battery_charge', messages=iot_battery_messages)
+        logger.debug('resp=%s', resp)
 
     return {
         "statusCode": 200

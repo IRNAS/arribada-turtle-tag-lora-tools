@@ -1,0 +1,20 @@
+Warning
+=======
+
+The template.yaml may need to be modified if you wish to deploy this
+package onto a different AWS account.  Specifically, the ARNs used
+by this template should be updated to reflect the ARNs used on your
+own AWS instance.  This package uses:
+
+- CloudWatch
+- DynamoDB
+- IOTRule
+
+Testing
+=======
+
+The file event.json contains a test event for triggering the lambda
+function.
+
+sam build
+sam local invoke --event event.json

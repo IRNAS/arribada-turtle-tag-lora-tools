@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Resources:
+  ArribadaPushShadowIoTAnalyticsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Timeout: 10
+      Policies:
+        - AWSLambdaExecute
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+              Resource: arn:aws:logs:us-west-2:302222748002:*
+            - Effect: Allow
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: arn:aws:logs:us-west-2:302222748002:log-group:/aws/lambda/ArribadaPushShadowIoTAnalyticsFunction:*
+            - Effect: Allow
+              Action:
+                - iotanalytics:BatchPutMessage
+              Resource: arn:aws:dynamodb:us-west-2:302222748002:channel/*
+
+      Handler: app.lambda_handler
+      Runtime: python2.7
+      CodeUri: push_shadow_iotanalytics/
+    Events:
+      IoTLoggingMessage:
+        Type: IOTRule
+        Properties:
+          Sql: "SELECT * AS update, topic(3) as thing_name FROM '$aws/things/+/shadow/update/documents'"

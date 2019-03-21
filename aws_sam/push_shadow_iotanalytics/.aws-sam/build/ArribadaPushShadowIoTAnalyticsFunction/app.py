@@ -1,6 +1,7 @@
 import logging
 import boto3
 import uuid
+import json
 
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)
@@ -19,40 +20,44 @@ def lambda_handler(event, context):
 
     logger.info('Thing: %s State: %s Time: %s', thing_name, current_record, timestamp)
 
-    db_client = boto3.client('dynamodb')
+    iot_client = boto3.client('iotanalytics')
     uid = uuid.uuid4()
     entry = {}
-    entry['uuid'] = { 'S': str(uid) }
-    entry['thing_name'] = { 'S': thing_name }
-    entry['timestamp'] = { 'N': str(timestamp) }
+    entry['thing_name'] = thing_name
+    entry['timestamp'] = timestamp
     if 'last_gps_location' in device_status:
         gps = device_status['last_gps_location']
-        entry['last_gps_fix_longitude'] = { 'N': str(gps['longitude']) }
-        entry['last_gps_fix_latitude'] = { 'N': str(gps['latitude']) }
-        entry['last_gps_fix_time'] = { 'N': str(gps['timestamp']) }
+        entry['last_gps_fix_longitude'] = gps['longitude']
+        entry['last_gps_fix_latitude'] = gps['latitude']
+        entry['last_gps_fix_time'] = gps['timestamp']
     if 'last_cellular_connected_timestamp' in device_status:
         ts = device_status['last_cellular_connected_timestamp']
-        entry['last_cellular_connection'] = { 'N': str(ts) }
+        entry['last_cellular_connection'] = ts
     if 'last_sat_tx_timestamp' in device_status:
         ts = device_status['last_sat_tx_timestamp']
-        entry['last_sat_tx'] = { 'N': str(ts) }
+        entry['last_sat_tx'] = ts
     if 'next_sat_tx_timestamp' in device_status:
         ts = device_status['next_sat_tx_timestamp']
-        entry['next_sat_tx'] = { 'N': str(ts) }
+        entry['next_sat_tx'] = ts
     if 'battery_level' in device_status:
         n = device_status['battery_level']
-        entry['battery_level'] = { 'N': str(n) }
+        entry['battery_level'] = n
     if 'configuration_version' in device_status:
         n = device_status['configuration_version']
-        entry['config_version'] = { 'N': str(n) }
+        entry['config_version'] = n
     if 'firmware_version' in device_status:
         n = device_status['firmware_version']
-        entry['fw_version'] = { 'N': str(n) }
+        entry['fw_version'] = n
     if 'last_log_file_read_pos' in device_status:
         n = device_status['last_log_file_read_pos']
-        entry['last_log_read_pos'] = { 'N': str(n) }
+        entry['last_log_read_pos'] = n
 
-    resp = db_client.put_item(TableName='ArribadaDeviceStatus', Item=entry)
+    resp = iot_client.batch_put_message(channelName='arribada_device_status',
+                                        messages=[{
+                                                   'messageId': str(uid),
+                                                   'payload': json.dumps(entry)
+                                                   }
+                                                  ])
     logger.debug('resp=%s', resp)
 
     return { 'statusCode': 200 }
