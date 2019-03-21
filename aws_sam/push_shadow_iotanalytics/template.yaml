@@ -12,16 +12,16 @@ Resources:
             - Effect: Allow
               Action:
                 - logs:CreateLogGroup
-              Resource: *
+              Resource: "*"
             - Effect: Allow
               Action:
                 - logs:CreateLogStream
                 - logs:PutLogEvents
-              Resource: *
+              Resource: "*"
             - Effect: Allow
               Action:
                 - iotanalytics:BatchPutMessage
-              Resource: *
+              Resource: "*"
 
       Handler: app.lambda_handler
       Runtime: python2.7
