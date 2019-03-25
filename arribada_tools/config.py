@@ -115,11 +115,12 @@ def json_dumps(objects):
     obj_hash = {}
     for i in objects:
         h = obj_hash
-        p = i.path.split('.')
-        for j in p:
-            if j not in h:
-                h[j] = {}
-            h = h[j]
+        if i.path:
+            p = i.path.split('.')
+            for j in p:
+                if j not in h:
+                    h[j] = {}
+                h = h[j]
         for j in i.json_params:
             h[j] = getattr(i, j)
     return json.dumps(obj_hash, indent=4, sort_keys=True)
@@ -192,6 +193,16 @@ class ConfigItem(TaggedItem):
         self.extend(fmt, args)
         for k in kwargs.keys():
             setattr(self, k, kwargs[k])
+
+
+class ConfigItem_System_DeviceIdentifier(ConfigItem):
+    tag = 0x0B00
+    path = None
+    params = ['version']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'I', self.params, **kwargs)
 
 
 class ConfigItem_System_DeviceIdentifier(ConfigItem):
