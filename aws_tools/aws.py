@@ -2,6 +2,7 @@ import boto3
 import os
 import logging
 import random
+import time
 from OpenSSL import crypto
 
 
@@ -119,6 +120,14 @@ def lookup_iot_rule_by_name(name):
     for i in funcs['rules']:
         if name in i['ruleName']:
             return i['ruleName']
+
+
+def lookup_iot_rule_arn_by_name(name):
+    cli = boto3.client('iot')
+    funcs = cli.list_topic_rules()
+    for i in funcs['rules']:
+        if name in i['ruleName']:
+            return i['ruleArn']
 
 
 def lookup_iot_group_arn_by_name(name):
@@ -284,6 +293,8 @@ def create_iot_rules():
     for i in IOT_RULES:
         lambda_arn = lookup_function_arn_by_name(i[1])
         if lambda_arn:
+            # Annoyingly this function does not return
+            # anything such as the ruleArn which would be quite useful
             cli.create_topic_rule(ruleName=i[0],
                                   topicRulePayload={
                                     'sql': i[2],
@@ -294,6 +305,16 @@ def create_iot_rules():
                                       }
                                     }]
                                   })
+            rule_arn = lookup_iot_rule_arn_by_name(i[0])
+            if rule_arn:
+                lam = boto3.client('lambda')
+                lam.add_permission(FunctionName=lambda_arn,
+                                   StatementId=i[0],
+                                   Action='lambda:InvokeFunction',
+                                   Principal='iot.amazonaws.com',
+                                   SourceArn=rule_arn)
+            else:
+                logger.error('Could not add permission for rule %s to invoke lambda %s', i[0], lambda_arn)
         else:
             logger.error('Dependency lambda function %s is not installed', i[1])
 
@@ -306,6 +327,14 @@ def delete_iam_roles():
         role_name = lookup_iam_role_by_name(i[1])
         if role_name:
             cli.delete_role(RoleName=role_name)
+
+
+def delete_iot_thing(thing_name):
+    cli = boto3.client('iot')
+    principals = cli.list_thing_principals(thingName=thing_name)
+    for p in principals['principals']:
+        cli.detach_thing_principal(thingName=thing_name, principal=p)
+    cli.delete_thing(thingName=thing_name)
 
 
 def delete_iot_things():
@@ -338,9 +367,6 @@ def delete_iot_thing_group():
     if things['things']:
         logger.error('Must delete all things from group %s first', IOT_GROUP)
         return
-    policy_arn = lookup_iot_policy_arn_by_name(IOT_POLICY)
-    if policy_arn:
-        cli.detach_policy(policyName=IOT_POLICY, target=group['groupArn'])
     cli.delete_thing_group(thingGroupName=IOT_GROUP)
 
 
@@ -358,8 +384,11 @@ def delete_iot_certificates_by_ca(ca_cert_id):
     if ca_cert_id not in [ i['certificateId'] for i in ca_certs['certificates'] ]:
         return
     certs = cli.list_certificates_by_ca(caCertificateId=ca_cert_id)
+    policy_arn = lookup_iot_policy_arn_by_name(IOT_POLICY)
     for i in certs['certificates']:
         cli.update_certificate(certificateId=i['certificateId'], newStatus='INACTIVE')
+        if policy_arn:
+            cli.detach_policy(policyName=IOT_POLICY, target=i['certificateArn'])
         cli.delete_certificate(certificateId=i['certificateId'])
 
 
@@ -386,12 +415,7 @@ def create_iot_thing_group():
     groups = cli.list_thing_groups()
     if IOT_GROUP in [ i['groupName'] for i in groups['thingGroups'] ]:
         return
-    resp = cli.create_thing_group(thingGroupName=IOT_GROUP)
-    # Attach policy to group
-    policy_arn = lookup_iot_policy_arn_by_name(IOT_POLICY)
-    if policy_arn:
-        cli.attach_policy(policyName=IOT_POLICY, target=resp['thingGroupArn'])
-        logger.warn('Policy %s does not exist, so could not attach policy to group', IOT_POLICY)
+    cli.create_thing_group(thingGroupName=IOT_GROUP)
 
 
 def generate_root_cert(common_name):
@@ -489,6 +513,13 @@ def register_new_thing(root_ca, thing_name):
     resp = cli.register_certificate(certificatePem=crypto.dump_certificate(crypto.FILETYPE_PEM, cert[0]),
                                     setAsActive=True)
 
+    # Attach policy to certificate
+    policy_arn = lookup_iot_policy_arn_by_name(IOT_POLICY)
+    if policy_arn:
+        cli.attach_policy(policyName=IOT_POLICY, target=resp['certificateArn'])
+    else:
+        logger.warn('Policy %s does not exist, so could not attach policy to certificate', IOT_POLICY)
+
     cli.create_thing(thingName=thing_name)
     group_arn = lookup_iot_group_arn_by_name(IOT_GROUP)
     if group_arn:
@@ -500,6 +531,22 @@ def register_new_thing(root_ca, thing_name):
     cli.attach_thing_principal(thingName=thing_name, principal=resp['certificateArn'])
 
     return cert
+
+
+def get_iot_endpoint_address():
+    cli = boto3.client('iot')
+    return cli.describe_endpoint()['endpointAddress']
+
+
+def list_iot_datasets():
+    cli = boto3.client('iotanalytics')
+    return [ i['datasetName'] for i in cli.list_datasets()['datasetSummaries'] ]
+
+
+def get_iot_dataset_contents(dataset):
+    cli = boto3.client('iotanalytics')
+    resp = cli.get_dataset_content(datasetName=dataset)
+    return [i['dataURI'] for i in resp['entries']]
 
 
 def install(root_ca):
@@ -528,7 +575,7 @@ def uninstall(certificate_id):
     #delete_iam_roles()
     delete_iot_things()
     delete_iot_thing_group()
-    delete_iot_policies()
     if certificate_id:
         delete_iot_certificates_by_ca(certificate_id)
         delete_iot_ca_certificate(certificate_id)
+    delete_iot_policies()

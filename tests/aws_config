@@ -1,0 +1,167 @@
+#!/usr/bin/python2.7
+
+from OpenSSL import crypto
+import argparse
+import logging
+import sys
+import json
+import os
+
+from aws_tools import aws
+from aws_tools import __version__
+from http import client as httpcli
+
+
+logger = logging.getLogger(__name__)
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--version', action='store_true', required=False)
+parser.add_argument('--debug', action='store_true', required=False)
+parser.add_argument('--cert_path', default='.', type=str, required=False)
+parser.add_argument('--namespace', default='arribada', type=str, required=False)
+parser.add_argument('--install', action='store_true', required=False)
+parser.add_argument('--uninstall', action='store_true', required=False)
+parser.add_argument('--region', type=str, required=False)
+parser.add_argument('--register_thing', type=str, required=False)
+parser.add_argument('--unregister_thing', type=str, required=False)
+parser.add_argument('--get_shadow', type=str, required=False)
+parser.add_argument('--set_shadow', type=str, required=False)
+parser.add_argument('--delete_shadow', type=str, required=False)
+parser.add_argument('--update_status', type=str, required=False)
+parser.add_argument('--send_logging', type=str, required=False)
+parser.add_argument('--download_dataset', type=str, required=False)
+parser.add_argument('--list_datasets', action='store_true', required=False)
+parser.add_argument('--data', type=str, required=False)
+
+
+args = parser.parse_args()
+
+
+if not any(vars(args).values()):
+    parser.print_help()
+    sys.exit()
+
+if args.version:
+    print 'Version:', __version__
+    sys.exit()
+
+if args.debug:
+    logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.DEBUG)
+else:
+    logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.INFO)
+
+
+## Set namespace dependent parameters
+aws.S3_BUCKET = args.namespace
+aws.IOT_POLICY = args.namespace
+aws.IOT_GROUP = args.namespace
+if args.region: aws.REGION = args.region
+
+
+AWS_HTTPS_PORT = 8443
+
+
+def save_crypto(name, c):
+    (cert, key) = c
+    with open('%s/%s.cert' % (args.cert_path, name), 'w') as fd:
+        fd.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+    with open('%s/%s.key'% (args.cert_path, name), 'w') as fd:
+        fd.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
+    with open('%s/%s.pubkey'% (args.cert_path, name), 'w') as fd:
+        fd.write(crypto.dump_publickey(crypto.FILETYPE_PEM, key))
+
+
+def save_cid(name, cid):
+    with open('%s/%s.cid' % (args.cert_path, name), 'w') as fd:
+        fd.write(cid)
+
+
+def load_cid(name):
+    with open('%s/%s.cid' % (args.cert_path, name), 'r') as fd:
+        return fd.read()
+
+
+def load_crypto(name):
+    with open('%s/%s.cert' % (args.cert_path, name), 'r') as fd:
+        data = fd.read()
+        cert = crypto.load_certificate(crypto.FILETYPE_PEM, data)
+    with open('%s/%s.key'% (args.cert_path, name), 'r') as fd:
+        data = fd.read()
+        key = crypto.load_privatekey(crypto.FILETYPE_PEM, data)
+    return (cert, key)
+
+
+if args.install:
+    root_ca = aws.generate_root_cert(args.namespace)
+    cid = aws.install(root_ca)
+    save_crypto(args.namespace, root_ca)
+    save_cid(args.namespace, cid)
+
+if args.uninstall:
+    cid = load_cid(args.namespace)
+    aws.uninstall(cid)
+
+if args.register_thing:
+    root_ca = load_crypto(args.namespace)
+    cert_key = aws.register_new_thing(root_ca, args.register_thing)
+    save_crypto(args.register_thing, cert_key)
+
+if args.unregister_thing:
+    aws.delete_iot_thing(args.unregister_thing)
+    
+if args.data:
+    if args.data[0] == '@':
+        with open(args.data[1:], 'rb') as fd:
+            args.data = fd.read()
+
+if args.set_shadow and args.data:
+    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                   key_file='%s/%s.key' % (args.cert_path, args.set_shadow),
+                                   cert_file='%s/%s.cert' % (args.cert_path, args.set_shadow))
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    conn.request('POST', '/things/%s/shadow' % args.set_shadow, args.data, headers)
+    print conn.getresponse().read()
+
+if args.delete_shadow:
+    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                   key_file='%s/%s.key' % (args.cert_path, args.delete_shadow),
+                                   cert_file='%s/%s.cert' % (args.cert_path, args.delete_shadow))
+    conn.request('DELETE', '/things/%s/shadow' % args.delete_shadow)
+    print conn.getresponse().read()
+
+if args.get_shadow:
+    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                   key_file='%s/%s.key' % (args.cert_path, args.get_shadow),
+                                   cert_file='%s/%s.cert' % (args.cert_path, args.get_shadow))
+    conn.request('GET', '/things/%s/shadow' % args.get_shadow)
+    print conn.getresponse().read()
+
+if args.update_status and args.data:
+    status = json.loads(args.data)
+    req = { "state": { "desired": { "device_status": status } } }
+    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                   key_file='%s/%s.key' % (args.cert_path, args.update_status),
+                                   cert_file='%s/%s.cert' % (args.cert_path, args.update_status))
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    conn.request('POST', '/things/%s/shadow' % args.update_status, json.dumps(req), headers)
+    print conn.getresponse().read()
+
+if args.send_logging and args.data:
+    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                   key_file='%s/%s.key' % (args.cert_path, args.send_logging),
+                                   cert_file='%s/%s.cert' % (args.cert_path, args.send_logging))
+    headers = {'Content-type': 'application/octet-stream', 'Accept': 'text/plain'}
+    conn.request('POST', '/topics/%s/logging' % args.send_logging, args.data, headers)
+    print conn.getresponse().read()
+
+if args.list_datasets:
+    print aws.list_iot_datasets()
+
+if args.download_dataset:
+    uri_list = aws.get_iot_dataset_contents(args.download_dataset)
+    for uri in uri_list:
+        (base, _) = uri.split('?')
+        k = base.split('/')
+        print 'Downloading dataset to', k[4], '...'
+        os.system('wget --quiet --no-check-certificate "%s" -O %s' % (uri, k[4]))
