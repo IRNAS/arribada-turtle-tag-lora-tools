@@ -201,24 +201,19 @@ class ConfigItem_System_DeviceIdentifier(ConfigItem):
     json_params = params
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'8s', self.params, **kwargs)
+        ConfigItem.__init__(self, b'256s', self.params, **kwargs)
 
     def pack(self):
         old = self.deviceIdentifier
-        self.deviceIdentifier = binascii.unhexlify(self.deviceIdentifier.replace(':', ''))
+        self.deviceIdentifier = self.deviceIdentifier[:255].encode('ascii', 'ignore') # we use 255 bytes as the last must be a null '\0'
         data = ConfigItem.pack(self)
+        print data
         self.deviceIdentifier = old
         return data
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        device_id = binascii.hexlify(self.deviceIdentifier)
-        new_id = b''
-        for i in range(len(device_id)):
-            new_id = new_id + device_id[i]
-            if i & 1 and i != (len(device_id)-1):
-                new_id = new_id + ':'
-        self.deviceIdentifier = new_id
+        self.deviceIdentifier = self.deviceIdentifier.rstrip('\x00') # Remove null characters
 
 
 class ConfigItem_GPS_LogPositionEnable(ConfigItem):
