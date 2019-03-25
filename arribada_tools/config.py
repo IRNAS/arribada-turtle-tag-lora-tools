@@ -215,10 +215,12 @@ class ConfigItem_System_DeviceIdentifier(ConfigItem):
         ConfigItem.__init__(self, b'256s', self.params, **kwargs)
 
     def pack(self):
-        old = self.deviceIdentifier
-        self.deviceIdentifier = self.deviceIdentifier[:255].encode('ascii', 'ignore') # we use 255 bytes as the last must be a null '\0'
+        deviceIdentifier = self.deviceIdentifier
+        if len(self.deviceIdentifier.encode('ascii', 'ignore')) > 255: # we use 255 bytes as the last must be a null '\0'
+            raise ExceptionConfigInvalidValue
+        self.deviceIdentifier = self.deviceIdentifier.encode('ascii', 'ignore') # we use 255 bytes as the last must be a null '\0'
         data = ConfigItem.pack(self)
-        self.deviceIdentifier = old
+        self.deviceIdentifier = deviceIdentifier
         return data
 
     def unpack(self, data):
@@ -922,6 +924,107 @@ class ConfigItem_BLE_LogEnable(ConfigItem):
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
+
+
+class ConfigItem_IOT_General(ConfigItem):
+    tag = 0x0A00
+    path = 'iot'
+    params = ['enable', 'logEnable', 'minBatteryThreshold']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'??B', self.params, **kwargs)
+
+    def pack(self):
+        if self.minBatteryThreshold > 100:
+            raise ExceptionConfigInvalidValue
+        data = ConfigItem.pack(self)
+        return data
+
+
+class ConfigItem_IOT_Cellular(ConfigItem):
+    tag = 0x0A01
+    path = 'iot.cellular'
+    params = ['enable', 'connectionPriority', 'connectionMode', 'logFilter', 'statusFilter', 'checkFirmwareUpdates', 'checkConfigurationUpdates',
+              'minUpdates', 'maxInterval', 'minInterval', 'maxBackoffInterval', 'gpsScheduleIntervalOnMaxBackoff']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'?BBII??BIIII', self.params, **kwargs)
+
+    def pack(self):
+        connectionMode = self.connectionMode
+        if self.connectionMode == '2G':
+            self.connectionMode = 0
+        elif self.connectionMode == '3G':
+            self.connectionMode = 1
+        elif self.connectionMode == 'AUTO':
+            self.connectionMode = 2
+        else:
+            raise ExceptionConfigInvalidValue
+        if self.connectionPriority > 10:
+            raise ExceptionConfigInvalidValue
+        data = ConfigItem.pack(self)
+        self.connectionMode = connectionMode
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        if (self.connectionMode == 0):
+            self.connectionMode = '2G'
+        elif (self.connectionMode == 1):
+            self.connectionMode = '3G'
+        elif (self.connectionMode == 2):
+            self.connectionMode = 'AUTO'
+        else:
+            self.connectionMode = 'UNKNOWN'
+
+
+class ConfigItem_IOT_Cellular_AWS(ConfigItem):
+    tag = 0x0A02
+    path = 'iot.cellular.aws'
+    params = ['arn', 'port', 'thingName', 'loggingTopicPath', 'deviceShadowPath ']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'64sH256s256s256s', self.params, **kwargs)
+
+    def pack(self):
+        if len(self.arn.encode('ascii', 'ignore')) > 63: # we use 63 bytes as the last must be a null '\0'
+            raise ExceptionConfigInvalidValue
+        arn = self.arn
+        self.arn = self.arn.encode('ascii', 'ignore')
+
+        if len(self.thingName.encode('ascii', 'ignore')) > 255: # we use 255 bytes as the last must be a null '\0'
+            raise ExceptionConfigInvalidValue
+        thingName = self.thingName
+        self.thingName = self.thingName.encode('ascii', 'ignore')
+
+        if len(self.loggingTopicPath.encode('ascii', 'ignore')) > 255: # we use 255 bytes as the last must be a null '\0'
+            raise ExceptionConfigInvalidValue
+        loggingTopicPath = self.loggingTopicPath
+        self.loggingTopicPath = self.loggingTopicPath.encode('ascii', 'ignore')
+
+        if len(self.deviceShadowPath.encode('ascii', 'ignore')) > 255: # we use 255 bytes as the last must be a null '\0'
+            raise ExceptionConfigInvalidValue
+        deviceShadowPath = self.deviceShadowPath
+        self.deviceShadowPath = self.deviceShadowPath.encode('ascii', 'ignore')
+
+        data = ConfigItem.pack(self)
+
+        self.arn = arn
+        self.thingName = thingName
+        self.loggingTopicPath = loggingTopicPath
+        self.deviceShadowPath = deviceShadowPath
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        # Remove null characters
+        self.arn = self.arn.rstrip('\x00')
+        self.thingName = self.thingName.rstrip('\x00')
+        self.loggingTopicPath = self.loggingTopicPath.rstrip('\x00')
+        self.deviceShadowPath = self.deviceShadowPath.rstrip('\x00')
 
 
 class ConfigItem_Battery_LogEnable(ConfigItem):
