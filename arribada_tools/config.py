@@ -207,7 +207,6 @@ class ConfigItem_System_DeviceIdentifier(ConfigItem):
         old = self.deviceIdentifier
         self.deviceIdentifier = self.deviceIdentifier[:255].encode('ascii', 'ignore') # we use 255 bytes as the last must be a null '\0'
         data = ConfigItem.pack(self)
-        print data
         self.deviceIdentifier = old
         return data
 
