@@ -317,6 +317,9 @@ def delete_iot_things():
         return
     things = cli.list_things_in_thing_group(thingGroupName=IOT_GROUP)
     for i in things['things']:
+        principals = cli.list_thing_principals(thingName=i)
+        for p in principals['principals']:
+            cli.detach_thing_principal(thingName=i, principal=p)
         cli.delete_thing(thingName=i)
 
 
@@ -324,12 +327,20 @@ def delete_iot_thing_group():
     """Delete the IOT_GROUP thing group only if the group is empty"""
     cli = boto3.client('iot')
     groups = cli.list_thing_groups()
-    if IOT_GROUP not in [ i['groupName'] for i in groups['thingGroups'] ]:
+    group = None
+    for i in groups['thingGroups']:
+        if IOT_GROUP in i['groupName']:
+            group = i
+            break
+    if group is None:
         return
     things = cli.list_things_in_thing_group(thingGroupName=IOT_GROUP)
     if things['things']:
         logger.error('Must delete all things from group %s first', IOT_GROUP)
         return
+    policy_arn = lookup_iot_policy_arn_by_name(IOT_POLICY)
+    if policy_arn:
+        cli.detach_policy(policyName=IOT_POLICY, target=group['groupArn'])
     cli.delete_thing_group(thingGroupName=IOT_GROUP)
 
 
@@ -348,6 +359,7 @@ def delete_iot_certificates_by_ca(ca_cert_id):
         return
     certs = cli.list_certificates_by_ca(caCertificateId=ca_cert_id)
     for i in certs['certificates']:
+        cli.update_certificate(certificateId=i['certificateId'], newStatus='INACTIVE')
         cli.delete_certificate(certificateId=i['certificateId'])
 
 
@@ -374,7 +386,12 @@ def create_iot_thing_group():
     groups = cli.list_thing_groups()
     if IOT_GROUP in [ i['groupName'] for i in groups['thingGroups'] ]:
         return
-    cli.create_thing_group(thingGroupName=IOT_GROUP)
+    resp = cli.create_thing_group(thingGroupName=IOT_GROUP)
+    # Attach policy to group
+    policy_arn = lookup_iot_policy_arn_by_name(IOT_POLICY)
+    if policy_arn:
+        cli.attach_policy(policyName=IOT_POLICY, target=resp['thingGroupArn'])
+        logger.warn('Policy %s does not exist, so could not attach policy to group', IOT_POLICY)
 
 
 def generate_root_cert(common_name):
@@ -447,6 +464,7 @@ def generate_cert_from_root(root, common_name):
 
 
 def register_root_ca(root_ca):
+
     cli = boto3.client('iot')
     ca_certs = cli.list_ca_certificates()
     if ca_certs['certificates']:
@@ -470,13 +488,6 @@ def register_new_thing(root_ca, thing_name):
     # Register certificate for new thing
     resp = cli.register_certificate(certificatePem=crypto.dump_certificate(crypto.FILETYPE_PEM, cert[0]),
                                     setAsActive=True)
-
-    # Attach policy to certificate
-    policy_arn = lookup_iot_policy_arn_by_name(IOT_POLICY)
-    if policy_arn:
-        cli.attach_policy(policyName=IOT_POLICY, target=resp['certificateArn'])
-    else:
-        logger.warn('Policy %s does not exist, so could not attach policy to certificate', IOT_POLICY)
 
     cli.create_thing(thingName=thing_name)
     group_arn = lookup_iot_group_arn_by_name(IOT_GROUP)
