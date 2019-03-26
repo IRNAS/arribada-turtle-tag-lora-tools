@@ -30,7 +30,8 @@ def lambda_handler(event, context):
     gps_pos = None
     ttff = None
     timestamp = None
-    battery = None
+    battery_charge = None
+    battery_voltage = None
 
     iot_gps_messages = []
     iot_battery_messages = []
@@ -45,7 +46,9 @@ def lambda_handler(event, context):
         elif i.tag == log.LogItem_Time_DateTime.tag:
             timestamp = convert_date_time_to_timestamp(i)
         elif i.tag == log.LogItem_Battery_Charge.tag:
-            battery = i
+            battery_charge = i
+        elif i.tag == log.LogItem_Battery_Voltage.tag:
+            battery_voltage = i
 
         if gps_pos is not None and timestamp is not None:
             uid = uuid.uuid4()
@@ -71,12 +74,12 @@ def lambda_handler(event, context):
             ttff = None
             timestamp = None
 
-        if battery is not None and timestamp is not None:
+        if battery_charge is not None and timestamp is not None:
             # Create table entry            
             uid = uuid.uuid4()
             entry = { 'thing_name': thing_name,
-                      'timestmap': timestamp,
-                      'battery_level': battery.charge
+                      'timestamp': timestamp,
+                      'battery_level': battery_charge.charge
             }
             #logger.debug('Battery: %s', entry)
 
@@ -86,7 +89,25 @@ def lambda_handler(event, context):
                 })
 
             # Reset fields
-            battery = None      
+            battery_charge = None      
+            timestamp = None
+
+        if battery_voltage is not None and timestamp is not None:
+            # Create table entry            
+            uid = uuid.uuid4()
+            entry = { 'thing_name': thing_name,
+                      'timestamp': timestamp,
+                      'battery_voltage': battery_voltage.voltage
+            }
+            #logger.debug('Battery: %s', entry)
+
+            iot_battery_messages.append({
+                'messageId': str(uid),
+                'payload': json.dumps(entry)
+                })
+
+            # Reset fields
+            battery_voltage = None      
             timestamp = None
 
     if iot_gps_messages:

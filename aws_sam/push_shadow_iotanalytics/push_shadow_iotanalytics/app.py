@@ -42,6 +42,9 @@ def lambda_handler(event, context):
     if 'battery_level' in device_status:
         n = device_status['battery_level']
         entry['battery_level'] = n
+    if 'battery_voltage' in device_status:
+        n = device_status['battery_voltage']
+        entry['battery_voltage'] = n
     if 'configuration_version' in device_status:
         n = device_status['configuration_version']
         entry['config_version'] = n

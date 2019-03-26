@@ -243,6 +243,15 @@ class LogItem_Battery_Charge(LogItem):
         LogItem.__init__(self, b'B', self.fields, **kwargs)
 
 
+class LogItem_Battery_Voltage(LogItem):
+    tag = 0x13
+    name = 'BatteryVoltage'
+    fields = ['voltage']
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'H', self.fields, **kwargs)
+
+
 class LogItem_Bluetooth_Enabled(LogItem):
     tag = 0x0A
     name = 'BluetoothEnabled'
