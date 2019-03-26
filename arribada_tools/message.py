@@ -287,28 +287,35 @@ class ConfigMessage_FW_SEND_IMAGE_REQ(ConfigMessage):
     cmd = 19
     name = 'FW_SEND_IMAGE_REQ'
 
+    # First two entries are reserved for future use
+    allowed_image_type = ['', '', 'ARTIC']
     def __init__(self, **kwargs):
-        ConfigMessage.__init__(self, b'BII', ['image_type', 'length', 'crc',], **kwargs)
+        ConfigMessage.__init__(self, b'BII', ['image_type', 'image_length', 'crc',], **kwargs)
 
     def pack(self):
-        image_type = self.image_type
-        if self.image_type == 'STM32':
-            self.image_type = 1
-        elif self.image_type == 'BLE':
-            self.image_type = 2
+        if hasattr(self, 'image_type'):
+            image_type = self.image_type
+            if image_type and image_type in self.allowed_image_type:
+                self.image_type = self.allowed_image_type.index(image_type)
+            else:
+                raise ExceptionMessageInvalidValue('image_type must be one of %s' %
+                                                   [i for i in self.allowed_image_type if i])
         else:
-            raise ExceptionMessageInvalidValue
+            raise ExceptionMessageInvalidValue('image_type is a mandatory parameter')
+        if not hasattr(self, 'image_length'):
+            raise ExceptionMessageInvalidValue('image_length is a mandatory parameter')
+        if not hasattr(self, 'crc'):
+            raise ExceptionMessageInvalidValue('crc is a mandatory parameter')
+
         data = ConfigMessage.pack(self)
         self.image_type = image_type
         return data
 
     def unpack(self, data):
         ConfigMessage.unpack(self, data)
-        if (self.image_type == 1):
-            self.image_type = 'STM32'
-        elif (self.image_type == 2):
-            self.image_type = 'BLE'
-        else:
+        try:
+            self.image_type = self.allowed_image_type[self.image_type]
+        except:
             self.image_type = 'UNKNOWN'
 
 
@@ -325,33 +332,30 @@ class ConfigMessage_FW_APPLY_IMAGE_REQ(ConfigMessage):
 
     cmd = 21
     name = 'FW_APPLY_IMAGE_REQ'
+    allowed_image_type = ['', '', 'ARTIC']
 
     def __init__(self, **kwargs):
         ConfigMessage.__init__(self, b'B', ['image_type'], **kwargs)
 
     def pack(self):
-        image_type = self.image_type
-        if self.image_type == 'STM32':
-            self.image_type = 1
-        elif self.image_type == 'BLE':
-            self.image_type = 2
-        elif self.image_type == 'SOFTDEVICE':
-            self.image_type = 3
+        if hasattr(self, 'image_type'):
+            image_type = self.image_type
+            if image_type and image_type in self.allowed_image_type:
+                self.image_type = self.allowed_image_type.index(image_type)
+            else:
+                raise ExceptionMessageInvalidValue('image_type must be one of %s' %
+                                                   [i for i in self.allowed_image_type if i])
         else:
-            raise ExceptionMessageInvalidValue
+            raise ExceptionMessageInvalidValue('image_type is a mandatory parameter')
         data = ConfigMessage.pack(self)
         self.image_type = image_type
         return data
 
     def unpack(self, data):
         ConfigMessage.unpack(self, data)
-        if (self.image_type == 1):
-            self.image_type = 'STM32'
-        elif (self.image_type == 2):
-            self.image_type = 'BLE'
-        elif (self.image_type == 3):
-            self.image_type = 'SOFTDEVICE'
-        else:
+        try:
+            self.image_type = self.allowed_image_type[self.image_type]
+        except:
             self.image_type = 'UNKNOWN'
 
 

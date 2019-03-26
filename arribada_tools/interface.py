@@ -7,6 +7,10 @@ import binascii
 logger = logging.getLogger(__name__)
 
 
+class ExceptionFeatureDeprecated(Exception):
+    pass
+
+
 class ExceptionBackendCommsError(Exception):
     pass
 
@@ -108,7 +112,7 @@ class ConfigInterface(object):
     def fw_upgrade(self, image_type, data):
         crc = binascii.crc32(data) & 0xFFFFFFFF # Ensure CRC32 is unsigned
         cmd = message.ConfigMessage_FW_SEND_IMAGE_REQ(image_type=image_type,
-                                                      length=len(data),
+                                                      image_length=len(data),
                                                       crc=crc)
         resp = self._backend.command_response(cmd, self.timeout)
         resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
