@@ -27,6 +27,7 @@ parser.add_argument('--uninstall', action='store_true', required=False)
 parser.add_argument('--region', type=str, required=False)
 parser.add_argument('--register_thing', type=str, required=False)
 parser.add_argument('--unregister_thing', type=str, required=False)
+parser.add_argument('--get_iot_endpoint', action='store_true', required=False)
 parser.add_argument('--list_things', action='store_true', required=False)
 parser.add_argument('--get_shadow', type=str, required=False)
 parser.add_argument('--set_shadow', type=str, required=False)
@@ -134,6 +135,9 @@ if args.data:
     if args.data[0] == '@':
         with open(args.data[1:], 'rb') as fd:
             args.data = fd.read()
+
+if args.get_iot_endpoint:
+    print aws.get_iot_endpoint_address()
 
 if args.set_shadow and args.data:
     conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
