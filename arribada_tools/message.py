@@ -279,7 +279,14 @@ class ConfigMessage_STATUS_RESP(ConfigMessage):
     name = 'STATUS_RESP'
 
     def __init__(self, **kwargs):
-        ConfigMessage.__init__(self, b'BIII', ['error_code', 'fw_version', 'ble_fw_version', 'cfg_version'], **kwargs)
+        ConfigMessage.__init__(self, b'BIIII???',
+                               ['error_code', 'fw_version',
+                                'reserved', 'cfg_version',
+                                'unique_device_identifier',
+                                'gps_module_detected',
+                                'cellular_module_detected',
+                                'satellite_module_detected'
+                                ], **kwargs)
 
 
 class ConfigMessage_FW_SEND_IMAGE_REQ(ConfigMessage):
