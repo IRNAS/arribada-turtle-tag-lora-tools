@@ -2,7 +2,8 @@ import boto3
 import os
 import logging
 import random
-import time
+import uuid
+
 from OpenSSL import crypto
 
 
@@ -533,6 +534,15 @@ def register_new_thing(root_ca, thing_name):
     return cert
 
 
+def list_iot_registered_things():
+    cli = boto3.client('iot')
+    groups = cli.list_thing_groups()
+    if IOT_GROUP not in [ i['groupName'] for i in groups['thingGroups'] ]:
+        return []
+    things = cli.list_things_in_thing_group(thingGroupName=IOT_GROUP)
+    return things['things']
+
+
 def get_iot_endpoint_address():
     cli = boto3.client('iot')
     return cli.describe_endpoint()['endpointAddress']
@@ -547,6 +557,15 @@ def get_iot_dataset_contents(dataset):
     cli = boto3.client('iotanalytics')
     resp = cli.get_dataset_content(datasetName=dataset)
     return [i['dataURI'] for i in resp['entries']]
+
+
+def create_s3_object_and_get_presigned_url(data):
+    cli = boto3.client('s3')
+    uid = str(uuid.uuid4())
+    cli.upload_fileobj(data, S3_BUCKET, uid)
+    return cli.generate_presigned_url(ClientMethod='get_object',
+                                      Params={ 'Bucket': S3_BUCKET, 'Key': uid },
+                                      ExpiresIn=365*24*60*60)
 
 
 def install(root_ca):
