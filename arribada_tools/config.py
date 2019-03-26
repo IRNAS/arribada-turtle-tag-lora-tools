@@ -230,7 +230,7 @@ class ConfigItem_System_DeviceName(ConfigItem):
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        self.deviceIdentifier = self.deviceIdentifier.rstrip('\x00') # Remove null characters
+        self.deviceName = self.deviceName.rstrip('\x00') # Remove null characters
 
 
 class ConfigItem_GPS_LogPositionEnable(ConfigItem):
