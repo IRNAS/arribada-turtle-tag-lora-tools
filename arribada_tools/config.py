@@ -7,7 +7,7 @@ import binascii
 import datetime
 import dateutil.parser
 
-__version__ = 4
+__version__ = 5
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +140,7 @@ def json_loads(text):
                 obj[path] = cls()
             setattr(obj[path], param, flat[i])
         else:
-            raise ExceptionConfigInvalidJSONField('Could not find %s' % i)
+            raise ExceptionConfigInvalidJSONField('Could not find "%s"' % i)
     return [obj[i] for i in obj]
 
 
@@ -174,7 +174,7 @@ class _Blob(object):
     def __repr__(self):
         s = self.__class__.__name__ + ' contents:\n'
         for i in self._args:
-            s += i + ' = ' + str(getattr(self, i, 'undefined')) + '\n'
+            s += i + ' = ' + str(getattr(self, i, None)) + '\n'
         return s
 
 
@@ -195,9 +195,9 @@ class ConfigItem(TaggedItem):
             setattr(self, k, kwargs[k])
 
 
-class ConfigItem_System_DeviceIdentifier(ConfigItem):
+class ConfigItem_Version(ConfigItem):
     tag = 0x0B00
-    path = None
+    path = ''
     params = ['version']
     json_params = params
 
@@ -205,22 +205,27 @@ class ConfigItem_System_DeviceIdentifier(ConfigItem):
         ConfigItem.__init__(self, b'I', self.params, **kwargs)
 
 
-class ConfigItem_System_DeviceIdentifier(ConfigItem):
+class ConfigItem_System_DeviceName(ConfigItem):
     tag = 0x0400
     path = 'system'
-    params = ['deviceIdentifier']
+    params = ['deviceName']
     json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'256s', self.params, **kwargs)
 
     def pack(self):
-        deviceIdentifier = self.deviceIdentifier
-        if len(self.deviceIdentifier.encode('ascii', 'ignore')) > 255: # we use 255 bytes as the last must be a null '\0'
-            raise ExceptionConfigInvalidValue
-        self.deviceIdentifier = self.deviceIdentifier.encode('ascii', 'ignore') # we use 255 bytes as the last must be a null '\0'
+        
+        if hasattr(self, 'deviceName'):
+            deviceName = self.deviceName
+            if len(self.deviceName.encode('ascii', 'ignore')) > 255: # we use 255 bytes as the last must be a null '\0'
+                raise ExceptionConfigInvalidValue('deviceName length must not exceed 255 bytes')
+            self.deviceName = self.deviceName.encode('ascii', 'ignore') # we use 255 bytes as the last must be a null '\0'
+        else:
+            raise ExceptionConfigInvalidValue('deviceName is a mandatory parameter')
+
         data = ConfigItem.pack(self)
-        self.deviceIdentifier = deviceIdentifier
+        self.deviceName = deviceName
         return data
 
     def unpack(self, data):
@@ -253,33 +258,26 @@ class ConfigItem_GPS_Mode(ConfigItem):
     path = 'gps'
     params = ['mode']
     json_params = params
+    allowed_mode = [ 'SWITCH_TRIGGERED', 'SCHEDULED', 'HYBRID' ]
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
 
     def pack(self):
         mode = self.mode
-        if self.mode == 'SWITCH_TRIGGERED':
-            self.mode = 0
-        elif self.mode == 'SCHEDULED':
-            self.mode = 1
-        elif self.mode == 'HYBRID':
-            self.mode = 2
+        if mode in self.allowed_mode:
+            self.mode = self.allowed_mode.index(mode)
         else:
-            raise ExceptionConfigInvalidValue
+            raise ExceptionConfigInvalidValue('mode must be one of %s' % self.allowed_mode)
         data = ConfigItem.pack(self)
         self.mode = mode
         return data
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        if (self.mode == 0):
-            self.mode = 'SWITCH_TRIGGERED'
-        elif (self.mode == 1):
-            self.mode = 'SCHEDULED'
-        elif (self.mode == 2):
-            self.mode = 'HYBRID'
-        else:
+        try:
+            self.mode = self.allowed_mode[self.mode]
+        except:
             self.mode = 'UNKNOWN'
 
 
@@ -350,10 +348,10 @@ class ConfigItem_GPS_LastKnownPosition(ConfigItem):
         self.accuracyVertical = self.accuracyVertical / 1000.0
 
 
-class ConfigItem_GPS_VeryFirstFixHoldTime(ConfigItem):
+class ConfigItem_GPS_TestFixHoldTime(ConfigItem):
     tag = 0x0007
     path = 'gps'
-    params = ['veryFirstFixHoldTime']
+    params = ['testFixHoldTime']
     json_params = params
 
     def __init__(self, **kwargs):
@@ -370,7 +368,17 @@ class ConfigItem_GPS_LogDebugEnable(ConfigItem):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
 
 
-class ConfigItem_saltwaterSwitch_LogEnable(ConfigItem):
+class ConfigItem_GPS_MaxFixes(ConfigItem):
+    tag = 0x0008
+    path = 'gps'
+    params = ['maxFixes']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'B', self.params, **kwargs)
+
+
+class ConfigItem_SaltwaterSwitch_LogEnable(ConfigItem):
     tag = 0x0800
     path = 'saltwaterSwitch'
     params = ['logEnable']
@@ -380,7 +388,7 @@ class ConfigItem_saltwaterSwitch_LogEnable(ConfigItem):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
 
 
-class ConfigItem_saltwaterSwitch_HysteresisPeriod(ConfigItem):
+class ConfigItem_SaltwaterSwitch_HysteresisPeriod(ConfigItem):
     tag = 0x0801
     path = 'saltwaterSwitch'
     params = ['hysteresisPeriod']
@@ -461,29 +469,27 @@ class ConfigItem_Logging_FileType(ConfigItem):
     path = 'logging'
     params = ['fileType']
     json_params = params
+    allowed_file_type = ['LINEAR', 'CIRCULAR']
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
 
     def pack(self):
         fileType = self.fileType
-        if self.fileType == 'LINEAR':
-            self.fileType = 0
-        elif self.fileType == 'CIRCULAR':
-            self.fileType = 1
+        if fileType in self.allowed_file_type:
+            self.fileType = self.allowed_file_type.index(fileType)
         else:
-            raise ExceptionConfigInvalidValue
+            raise ExceptionConfigInvalidValue('fileType must be one of %s' % self.allowed_file_type)
+
         data = ConfigItem.pack(self)
         self.fileType = fileType
         return data
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        if (self.fileType == 0):
-            self.fileType = 'LINEAR'
-        elif (self.fileType == 1):
-            self.fileType = 'CIRCULAR'
-        else:
+        try:
+            self.fileType = self.allowed_file_type[self.fileType]
+        except:
             self.fileType = 'UNKNOWN'
 
 
@@ -572,29 +578,27 @@ class ConfigItem_AXL_Mode(ConfigItem):
     path = 'accelerometer'
     params = ['mode']
     json_params = params
+    allowed_mode = ['PERIODIC', 'TRIGGER_ABOVE']
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
 
     def pack(self):
         mode = self.mode
-        if self.mode == 'PERIODIC':
-            self.mode = 0
-        elif self.mode == 'TRIGGER_ABOVE':
-            self.mode = 3
+        if mode in self.allowed_mode:
+            self.mode = self.allowed_mode.index(mode)
         else:
-            raise ExceptionConfigInvalidValue
+            raise ExceptionConfigInvalidValue('mode must be one of %s' % self.allowed_mode)
+
         data = ConfigItem.pack(self)
         self.mode = mode
         return data
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        if (self.mode == 0):
-            self.mode = 'PERIODIC'
-        elif (self.mode == 3):
-            self.mode = 'TRIGGER_ABOVE'
-        else:
+        try:
+            self.mode = self.allowed_mode[self.mode]
+        except:
             self.mode = 'UNKNOWN'
 
 
@@ -663,37 +667,27 @@ class ConfigItem_PressureSensor_Mode(ConfigItem):
     path = 'pressureSensor'
     params = ['mode']
     json_params = params
+    allowed_mode = ['PERIODIC', 'TRIGGER_BELOW', 'TRIGGER_BETWEEN', 'TRIGGER_ABOVE']
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
 
     def pack(self):
         mode = self.mode
-        if self.mode == 'PERIODIC':
-            self.mode = 0
-        elif self.mode == 'TRIGGER_BELOW':
-            self.mode = 1
-        elif self.mode == 'TRIGGER_BETWEEN':
-            self.mode = 2
-        elif self.mode == 'TRIGGER_ABOVE':
-            self.mode = 3
+        if mode in self.allowed_mode:
+            self.mode = self.allowed_mode.index(mode)
         else:
-            raise ExceptionConfigInvalidValue
+            raise ExceptionConfigInvalidValue('mode must be one of %s' % self.allowed_mode)
+
         data = ConfigItem.pack(self)
         self.mode = mode
         return data
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        if (self.mode == 0):
-            self.mode = 'PERIODIC'
-        elif (self.mode == 1):
-            self.mode = 'TRIGGER_BELOW'
-        elif (self.mode == 2):
-            self.mode = 'TRIGGER_BETWEEN'
-        elif (self.mode == 3):
-            self.mode = 'TRIGGER_ABOVE'
-        else:
+        try:
+            self.mode = self.allowed_mode[self.mode]
+        except:
             self.mode = 'UNKNOWN'
 
 
@@ -762,37 +756,27 @@ class ConfigItem_TempSensor_Mode(ConfigItem):
     path = 'temperateSensor'
     params = ['mode']
     json_params = params
+    allowed_mode = ['PERIODIC', 'TRIGGER_BELOW', 'TRIGGER_BETWEEN', 'TRIGGER_ABOVE']
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
 
     def pack(self):
         mode = self.mode
-        if self.mode == 'PERIODIC':
-            self.mode = 0
-        elif self.mode == 'TRIGGER_BELOW':
-            self.mode = 1
-        elif self.mode == 'TRIGGER_BETWEEN':
-            self.mode = 2
-        elif self.mode == 'TRIGGER_ABOVE':
-            self.mode = 3
+        if mode in self.allowed_mode:
+            self.mode = self.allowed_mode.index(mode)
         else:
-            raise ExceptionConfigInvalidValue
+            raise ExceptionConfigInvalidValue('mode must be one of %s' % self.allowed_mode)
+
         data = ConfigItem.pack(self)
         self.mode = mode
         return data
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        if (self.mode == 0):
-            self.mode = 'PERIODIC'
-        elif (self.mode == 1):
-            self.mode = 'TRIGGER_BELOW'
-        elif (self.mode == 2):
-            self.mode = 'TRIGGER_BETWEEN'
-        elif (self.mode == 3):
-            self.mode = 'TRIGGER_ABOVE'
-        else:
+        try:
+            self.mode = self.allowed_mode[self.mode]
+        except:
             self.mode = 'UNKNOWN'
 
 
@@ -809,7 +793,7 @@ class ConfigItem_BLE_DeviceAddress(ConfigItem):
         old = self.deviceAddress
         self.deviceAddress = binascii.unhexlify(self.deviceAddress.replace(':', ''))[::-1]
         if (ord(self.deviceAddress[5]) & 0b11000000) != 0b11000000:
-            raise ExceptionConfigBLEDeviceAddressTopTwoBitsNotSet # Enforce top 2 bits being set
+            raise ExceptionConfigInvalidValue('deviceAddress must have top two bits set')
         data = ConfigItem.pack(self)
         self.deviceAddress = old
         return data
@@ -830,9 +814,35 @@ class ConfigItem_BLE_TriggerControl(ConfigItem):
     path = 'bluetooth'
     params = ['triggerControl']
     json_params = params
+    allowed_trigger_control = ['REED_SWITCH', 'SCHEDULED', 'GEOFENCE', 'ONE_SHOT']
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
+
+    def pack(self):
+        if hasattr(self, 'triggerControl'):
+            triggerControl = self.triggerControl
+            self.triggerControl = 0
+            for i in triggerControl:
+                if i in self.allowed_trigger_control:
+                    self.triggerControl = self.triggerControl | (1 << self.allowed_trigger_control.index(i))
+                else:
+                    raise ExceptionConfigInvalidValue('triggerControl must be one of %s' % self.allowed_trigger_control)
+        else:
+            triggerControl = []
+            self.triggerControl = 0
+
+        data = ConfigItem.pack(self)
+        self.triggerControl = triggerControl
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        triggerControl = []
+        for i in self.allowed_trigger_control:
+            if self.triggerControl & (1<<self.allowed_trigger_control.index(i)):
+                triggerControl.append(i)
+        self.triggerControl = triggerControl
 
 
 class ConfigItem_BLE_ScheduledInterval(ConfigItem):
@@ -890,29 +900,27 @@ class ConfigItem_BLE_PHYMode(ConfigItem):
     path = 'bluetooth'
     params = ['phyMode']
     json_params = params
+    allowed_mode = ['1_MBPS', '2_MBPS']
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'B', self.params, **kwargs)
 
     def pack(self):
         phyMode = self.phyMode
-        if self.phyMode == '1_MBPS':
-            self.phyMode = 0
-        elif self.phyMode == '2_MBPS':
-            self.phyMode = 1
+        if phyMode in self.allowed_mode:
+            self.phyMode = self.allowed_mode.index(phyMode)
         else:
-            raise ExceptionConfigInvalidValue
+            raise ExceptionConfigInvalidValue('phyMode must be one of %s' % self.allowed_mode)
+
         data = ConfigItem.pack(self)
         self.phyMode = phyMode
         return data
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        if (self.phyMode == 0):
-            self.phyMode = '1_MBPS'
-        elif (self.phyMode == 1):
-            self.phyMode = '2_MBPS'
-        else:
+        try:
+            self.phyMode = self.allowed_mode[self.phyMode]
+        except:
             self.phyMode = 'UNKNOWN'
 
 
@@ -926,6 +934,44 @@ class ConfigItem_BLE_LogEnable(ConfigItem):
         ConfigItem.__init__(self, b'?', self.params, **kwargs)
 
 
+class ConfigItem_BLE_AdvertisingTags(ConfigItem):
+    tag = 0x0509
+    path = 'bluetooth'
+    params = ['advertisingTags']
+    json_params = params
+    allowed_tags = ['LAST_LOG_READ_POS', 'LAST_GPS_LOCATION', 'BATTERY_LEVEL',
+                    'BATTERY_VOLTAGE', 'LAST_CELLULAR_CONNECT', 'LAST_SAT_TX',
+                    'NEXT_SAT_TX', 'CONFIG_VERSION', 'FW_VERSION']
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'I', self.params, **kwargs)
+
+    def pack(self):
+        if hasattr(self, 'advertisingTags'):
+            advertisingTags = self.advertisingTags
+            self.advertisingTags = 0
+            for i in advertisingTags:
+                if i in self.allowed_tags:
+                    self.advertisingTags = self.advertisingTags | (1 << self.allowed_tags.index(i))
+                else:
+                    raise ExceptionConfigInvalidValue('advertisingTags must be one of %s' % self.allowed_tags)
+        else:
+            advertisingTags = []
+            self.advertisingTags = 0
+
+        data = ConfigItem.pack(self)
+        self.advertisingTags = advertisingTags
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        advertisingTags = []
+        for i in self.allowed_tags:
+            if self.advertisingTags & (1<<self.allowed_tags.index(i)):
+                advertisingTags.append(i)
+        self.advertisingTags = advertisingTags
+
+
 class ConfigItem_IOT_General(ConfigItem):
     tag = 0x0A00
     path = 'iot'
@@ -934,10 +980,16 @@ class ConfigItem_IOT_General(ConfigItem):
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'??B', self.params, **kwargs)
+        if not hasattr(self, 'enable'):
+            self.enable = True
+        if not hasattr(self, 'minBatteryThreshold'):
+            self.minBatteryThreshold = 0
+        if not hasattr(self, 'logEnable'):
+            self.logEnable = False
 
     def pack(self):
-        if self.minBatteryThreshold > 100:
-            raise ExceptionConfigInvalidValue
+        if self.minBatteryThreshold > 100 or self.minBatteryThreshold < 0:
+            raise ExceptionConfigInvalidValue('minBatteryThreshold must be between 0..100')
         data = ConfigItem.pack(self)
         return data
 
@@ -945,68 +997,144 @@ class ConfigItem_IOT_General(ConfigItem):
 class ConfigItem_IOT_Cellular(ConfigItem):
     tag = 0x0A01
     path = 'iot.cellular'
-    params = ['enable', 'connectionPriority', 'connectionMode', 'logFilter', 'statusFilter', 'checkFirmwareUpdates', 'checkConfigurationUpdates',
-              'minUpdates', 'maxInterval', 'minInterval', 'maxBackoffInterval', 'gpsScheduleIntervalOnMaxBackoff']
+    params = ['enable', 'connectionPriority', 'connectionMode', 'logFilter',
+              'statusFilter', 'checkFirmwareUpdates', 'checkConfigurationUpdates',
+              'minUpdates', 'maxInterval', 'minInterval', 'maxBackoffInterval',
+              'gpsScheduleIntervalOnMaxBackoff']
     json_params = params
+    allow_connection_mode = ['2G', '3G', 'AUTO']
+
+    # The order of these allowed filter options must match the bit-field order as
+    # implemented by the embedded software
+    allowed_log_filter = ['GPS', 'TIMESTAMP', 'DATETIME', 'BATTERY_VOLTAGE', 'BATTERY_LEVEL' ]
+    allowed_status_filter = ['LAST_LOG_READ_POS', 'LAST_GPS_LOCATION', 'BATTERY_LEVEL',
+                             'BATTERY_VOLTAGE', 'LAST_CELLULAR_CONNECT', 'LAST_SAT_TX',
+                             'NEXT_SAT_TX', 'CONFIG_VERSION', 'FW_VERSION']                             
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?BBII??BIIII', self.params, **kwargs)
+        if not hasattr(self, 'enable'):
+            self.enable = True
+        if not hasattr(self, 'connectionMode'):
+            self.connectionMode = 'AUTO'
+        if not hasattr(self, 'connectionPriority'):
+            self.connectionPriority = 0
+        if not hasattr(self, 'logFilter'):
+            self.logFilter = []
+        if not hasattr(self, 'checkFirmwareUpdates'):
+            self.checkFirmwareUpdates = True
+        if not hasattr(self, 'checkConfigurationUpdates'):
+            self.checkConfigurationUpdates = True
+        if not hasattr(self, 'minUpdates'):
+            self.minUpdates = 1
+        if not hasattr(self, 'maxInterval'):
+            self.maxInterval = 0     # Means disable
+        if not hasattr(self, 'minInterval'):
+            self.minInterval = 0     # Means disable
+        if not hasattr(self, 'maxBackoffInterval'):
+            self.maxBackoffInterval = 24*60*60
+        if not hasattr(self, 'gpsScheduleIntervalOnMaxBackoff'):
+            self.gpsScheduleIntervalOnMaxBackoff = 0     # Means disable
 
     def pack(self):
+        
         connectionMode = self.connectionMode
-        if self.connectionMode == '2G':
-            self.connectionMode = 0
-        elif self.connectionMode == '3G':
-            self.connectionMode = 1
-        elif self.connectionMode == 'AUTO':
-            self.connectionMode = 2
+        if connectionMode in self.allow_connection_mode:
+            self.connectionMode = self.allow_connection_mode.index(connectionMode)
         else:
-            raise ExceptionConfigInvalidValue
-        if self.connectionPriority > 10:
-            raise ExceptionConfigInvalidValue
+            raise ExceptionConfigInvalidValue('connectionMode must be one of %s' % self.allow_connection_mode)
+
+        if self.connectionPriority > 10 or self.connectionPriority < 0:
+            raise ExceptionConfigInvalidValue('connectionPriority must be between 0..10')
+
+        logFilter = self.logFilter
+        self.logFilter = 0
+        for i in logFilter:
+            if i in self.allowed_log_filter:
+                self.logFilter = self.logFilter | (1 << self.allowed_log_filter.index(i))
+            else:
+                raise ExceptionConfigInvalidValue('logFilter must be one of %s' % self.allowed_log_filter)
+
+        if hasattr(self, 'statusFilter'):
+            statusFilter = self.statusFilter
+            self.statusFilter = 0
+            for i in statusFilter:
+                if i in self.allowed_status_filter:
+                    self.statusFilter = self.statusFilter | (1 << self.allowed_status_filter.index(i))
+                else:
+                    raise ExceptionConfigInvalidValue('statusFilter must be one of %s' % self.allowed_status_filter)
+        else:
+            raise ExceptionConfigInvalidValue('statusFilter is a mandatory parameter')
+
+        if self.minUpdates < 1:
+            raise ExceptionConfigInvalidValue('minUpdates must be >= 1')
+
         data = ConfigItem.pack(self)
         self.connectionMode = connectionMode
+        self.logFilter = logFilter
+        self.statusFilter = statusFilter
+
         return data
 
     def unpack(self, data):
         ConfigItem.unpack(self, data)
-        if (self.connectionMode == 0):
-            self.connectionMode = '2G'
-        elif (self.connectionMode == 1):
-            self.connectionMode = '3G'
-        elif (self.connectionMode == 2):
-            self.connectionMode = 'AUTO'
-        else:
+        try:
+            self.connectionMode = self.allow_connection_mode[self.connectionMode]
+        except:
             self.connectionMode = 'UNKNOWN'
+
+        statusFilter = []
+        for i in self.allowed_status_filter:
+            if self.statusFilter & (1<<self.allowed_status_filter.index(i)):
+                statusFilter.append(i)
+        self.statusFilter = statusFilter
+
+        logFilter = []
+        for i in self.allowed_log_filter:
+            if self.logFilter & (1<<self.allowed_log_filter.index(i)):
+                logFilter.append(i)
+        self.logFilter = logFilter
 
 
 class ConfigItem_IOT_Cellular_AWS(ConfigItem):
     tag = 0x0A02
     path = 'iot.cellular.aws'
-    params = ['arn', 'port', 'thingName', 'loggingTopicPath', 'deviceShadowPath ']
+    params = ['arn', 'port', 'thingName', 'loggingTopicPath', 'deviceShadowPath']
     json_params = params
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'64sH256s256s256s', self.params, **kwargs)
+        if not hasattr(self, 'port'):
+            self.port = 8443
+        if not hasattr(self, 'thingName'):
+            self.thingName = b''   # Means use deviceName instead
+        if not hasattr(self, 'loggingTopicPath'):
+            self.loggingTopicPath = '/topics/#/logging'
+        if not hasattr(self, 'deviceShadowPath'):
+            self.deviceShadowPath = '/things/#/shadow'
 
     def pack(self):
+
+        if not hasattr(self, 'arn'):
+            raise ExceptionConfigInvalidValue('arn is a mandatory parameter')
+
         if len(self.arn.encode('ascii', 'ignore')) > 63: # we use 63 bytes as the last must be a null '\0'
-            raise ExceptionConfigInvalidValue
+            raise ExceptionConfigInvalidValue('arn length must not exceed 63 bytes')
         arn = self.arn
         self.arn = self.arn.encode('ascii', 'ignore')
 
         if len(self.thingName.encode('ascii', 'ignore')) > 255: # we use 255 bytes as the last must be a null '\0'
-            raise ExceptionConfigInvalidValue
+            raise ExceptionConfigInvalidValue('thingName must not exceed 255 bytes')
         thingName = self.thingName
         self.thingName = self.thingName.encode('ascii', 'ignore')
 
         if len(self.loggingTopicPath.encode('ascii', 'ignore')) > 255: # we use 255 bytes as the last must be a null '\0'
-            raise ExceptionConfigInvalidValue
+            raise ExceptionConfigInvalidValue('loggingTopicPath length must not exceed 255 bytes')
         loggingTopicPath = self.loggingTopicPath
         self.loggingTopicPath = self.loggingTopicPath.encode('ascii', 'ignore')
 
         if len(self.deviceShadowPath.encode('ascii', 'ignore')) > 255: # we use 255 bytes as the last must be a null '\0'
-            raise ExceptionConfigInvalidValue
+            raise ExceptionConfigInvalidValue('deviceShadowPath must not exceed 255 bytes')
         deviceShadowPath = self.deviceShadowPath
         self.deviceShadowPath = self.deviceShadowPath.encode('ascii', 'ignore')
 
