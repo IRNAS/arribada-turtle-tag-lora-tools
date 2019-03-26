@@ -370,29 +370,30 @@ class ConfigMessage_RESET_REQ(ConfigMessage):
 
     cmd = 22
     name = 'RESET_REQ'
+    allowed_reset = ['CPU', 'FLASH']
 
     def __init__(self, **kwargs):
         ConfigMessage.__init__(self, b'B', ['reset_type'], **kwargs)
 
     def pack(self):
-        reset_type = self.reset_type
-        if self.reset_type == 'STM32':
-            self.reset_type = 0
-        elif self.reset_type == 'FLASH':
-            self.reset_type = 1
+        if hasattr(self, 'reset_type'):
+            reset_type = self.reset_type
+            if reset_type in self.allowed_reset:
+                self.reset_type = self.allowed_reset.index(reset_type)
+            else:
+                raise ExceptionMessageInvalidValue('reset_type must be one of %s' % self.allowed_reset)
         else:
-            raise ExceptionMessageInvalidValue
+            raise ExceptionMessageInvalidValue('reset_type is a mandatory parameter')
+
         data = ConfigMessage.pack(self)
         self.reset_type = reset_type
         return data
 
     def unpack(self, data):
         ConfigMessage.unpack(self, data)
-        if (self.reset_type == 0):
-            self.reset_type = 'STM32'
-        elif (self.reset_type == 1):
-            self.reset_type = 'FLASH'
-        else:
+        try:
+            self.reset_type = self.allowed_reset[self.reset_type]
+        except:
             self.reset_type = 'UNKNOWN'
 
 
@@ -463,3 +464,74 @@ class ConfigMessage_LOG_READ_RESP(ConfigMessage):
 
     def __init__(self, **kwargs):
         ConfigMessage.__init__(self, b'BI', ['error_code', 'length'], **kwargs)
+
+
+class ConfigMessage_CELLULAR_CONFIG_REQ(ConfigMessage):
+
+    cmd = 29
+    name = 'CELLULAR_CONFIG_REQ'
+
+    def __init__(self, **kwargs):
+        ConfigMessage.__init__(self, b'?', ['enable'], **kwargs)
+
+
+class ConfigMessage_CELLULAR_WRITE_REQ(ConfigMessage):
+
+    cmd = 30
+    name = 'CELLULAR_WRITE_REQ'
+
+    def __init__(self, **kwargs):
+        ConfigMessage.__init__(self, b'I', ['length'], **kwargs)
+
+
+class ConfigMessage_CELLULAR_READ_REQ(ConfigMessage):
+
+    cmd = 31
+    name = 'CELLULAR_READ_REQ'
+
+    def __init__(self, **kwargs):
+        ConfigMessage.__init__(self, b'I', ['length'], **kwargs)
+
+
+class ConfigMessage_CELLULAR_READ_RESP(ConfigMessage):
+
+    cmd = 32
+    name = 'CELLULAR_READ_RESP'
+
+    def __init__(self, **kwargs):
+        ConfigMessage.__init__(self, b'BI', ['error_code', 'length'], **kwargs)
+
+
+class ConfigMessage_TEST_REQ(ConfigMessage):
+
+    cmd = 33
+    name = 'TEST_REQ'
+    allowed_test_mode = ['GPS', 'CELLULAR', 'SATELLITE']
+
+    def __init__(self, **kwargs):
+        ConfigMessage.__init__(self, b'B', ['test_mode'], **kwargs)
+
+    def pack(self):
+        if hasattr(self, 'test_mode'):
+            old_test_mode = self.test_mode
+            test_mode = 0
+            for i in self.test_mode:
+                if i in self.allowed_test_mode:
+                    test_mode = test_mode | (1<<self.allowed_test_mode.index(i))
+                else:
+                    raise ExceptionMessageInvalidValue('test_mode must be one of %s', self.allowed_test_mode)                
+            self.test_mode = test_mode
+        else:
+            raise ExceptionMessageInvalidValue('test_mode is a mandatory parameter')
+
+        data = ConfigMessage.pack(self)
+        self.test_mode = old_test_mode
+        return data
+
+    def unpack(self, data):
+        ConfigMessage.unpack(self, data)
+        test_mode = []
+        for i in self.allowed_test_mode:
+            if self.test_mode & (1<<self.allowed_test_mode.index(i)):
+                test_mode.append(i)
+        self.test_mode = test_mode

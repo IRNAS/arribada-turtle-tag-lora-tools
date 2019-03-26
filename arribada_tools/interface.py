@@ -147,3 +147,8 @@ class ConfigInterface(object):
         if resp.cfg_version != config.__version__:
             logger.warn('Board firmware configuration version is V%u but tool expects V%u', resp.cfg_version, config.__version__)
         return message.convert_to_dict(resp)
+#
+    def test_mode(self, test_mode):
+        cmd = message.ConfigMessage_TEST_REQ(test_mode=test_mode)
+        resp = self._backend.command_response(cmd, self.timeout)
+        resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
