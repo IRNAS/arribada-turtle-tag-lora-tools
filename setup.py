@@ -30,6 +30,13 @@ setup(
         'bluepy >= 1.1.4',
         'python-dateutil >= 2.6.1',
         'libusb1 >= 1.6.4',
+        'awscli >= 1.16.105',
+        'botocore >= 1.12.116',
+        'boto3 >= 1.9.116',
+        'cryptography >= 2.4.2',
+        'six >= 1.11.0',
+        'pyOpenSSL >= 19.0.0',
+        'httplib2 >= 0.12.0',
     ],
     test_suite='nose.collector',
     tests_require=[
