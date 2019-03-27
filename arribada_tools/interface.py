@@ -39,6 +39,11 @@ class ConfigInterface(object):
         resp = self._backend.command_response(cmd, self.timeout)
         resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
 
+    def cellular_config(self, enable):
+        cmd = message.ConfigMessage_CELLULAR_CONFIG_REQ(enable=enable)
+        resp = self._backend.command_response(cmd, self.timeout)
+        resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
+
     def write_json_configuration(self, json):
         objs = config.json_loads(json)
         config_data = config.encode_all(objs)

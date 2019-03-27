@@ -1,0 +1,47 @@
+#!/usr/bin/python2.7
+
+import argparse
+import logging
+from arribada_tools import cellular, backend, interface
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--serial', required=False)
+parser.add_argument('--baud', default=115200, type=int, required=False)
+parser.add_argument('--ble_addr', dest='bluetooth_addr', required=False)
+parser.add_argument('--root_ca', type=argparse.FileType('r'), required=True)
+parser.add_argument('--cert', type=argparse.FileType('r'), required=True)
+parser.add_argument('--key', type=argparse.FileType('r'), required=True)
+parser.add_argument('--debug', action='store_true', required=False)
+args = parser.parse_args()
+
+if args.debug:
+    logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.DEBUG)
+else:
+    logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.INFO)
+
+bridged_backend = None
+
+if args.serial:
+    cellular_backend = cellular.CellularSerialBackend(args.serial, baudrate=args.baud)
+else:
+    if args.bluetooth_addr:
+        bridged_backend = backend.BackendBluetooth(dev_addr=args.bluetooth_addr)
+    else:
+        bridged_backend = backend.BackendUsb()
+    cellular_backend = cellular.CellularBridgedBackend(bridged_backend)
+    interface.ConfigInterface(bridged_backend).cellular_config(True)
+
+cfg = cellular.CellularConfig(cellular_backend)
+
+cfg.delete_all()
+cfg.create_all(root_ca=args.root_ca.read(), cert=args.cert.read(), key=args.key.read())
+
+if bridged_backend:
+    interface.ConfigInterface(bridged_backend).cellular_config(False)
+
+if bridged_backend:
+    bridged_backend.cleanup()
+
+if cellular_backend:
+    cellular_backend.cleanup()
