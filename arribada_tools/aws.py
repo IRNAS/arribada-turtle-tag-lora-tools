@@ -559,10 +559,10 @@ def get_iot_dataset_contents(dataset):
     return [i['dataURI'] for i in resp['entries']]
 
 
-def create_s3_object_and_get_presigned_url(data):
+def create_s3_object_and_get_presigned_url(fd):
     cli = boto3.client('s3')
     uid = str(uuid.uuid4())
-    cli.upload_fileobj(data, S3_BUCKET, uid)
+    cli.upload_fileobj(fd, S3_BUCKET, uid)
     return cli.generate_presigned_url(ClientMethod='get_object',
                                       Params={ 'Bucket': S3_BUCKET, 'Key': uid },
                                       ExpiresIn=365*24*60*60)
@@ -572,12 +572,19 @@ def install(root_ca):
     """This registers a root CA certificate, IOT group, policies, etc.
        This action need only be done once
     """
+    logging.info('register_root_ca')
     certificate_id = register_root_ca(root_ca)
+    logging.info('create_iot_policy')
     create_iot_policy()
+    logging.info('create_iot_thing_group')
     create_iot_thing_group()
+    logging.info('create_s3')
     create_s3()
+    logging.info('deploy_sam_packages')
     deploy_sam_packages()
+    logging.info('create_iot_pipelines')
     create_iot_pipelines()
+    logging.info('create_iot_rules')
     create_iot_rules()
     return certificate_id
 
@@ -595,6 +602,9 @@ def uninstall(certificate_id):
     delete_iot_things()
     delete_iot_thing_group()
     if certificate_id:
+        logging.info('delete_iot_certificates_by_ca')
         delete_iot_certificates_by_ca(certificate_id)
+        logging.info('delete_iot_ca_certificate')
         delete_iot_ca_certificate(certificate_id)
+    logging.info('delete_iot_policies')
     delete_iot_policies()
