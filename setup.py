@@ -43,6 +43,7 @@ setup(
         'tests/log_parse',
         'tests/ble_scan',
         'tests/ble_auto',
+        'tests/aws_config',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

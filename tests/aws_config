@@ -7,10 +7,7 @@ import sys
 import json
 import os
 import zipfile
-from arribada_tools import config, message
-
-from aws_tools import aws
-from aws_tools import __version__
+from arribada_tools import config, message, aws, __version__
 from http import client as httpcli
 
 
