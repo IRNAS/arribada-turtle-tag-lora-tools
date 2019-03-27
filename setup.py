@@ -51,6 +51,7 @@ setup(
         'tests/ble_scan',
         'tests/ble_auto',
         'tests/aws_config',
+        'tests/cellular_config',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

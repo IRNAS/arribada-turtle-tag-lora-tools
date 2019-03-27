@@ -29,6 +29,7 @@ parser.add_argument('--list_things', action='store_true', required=False)
 parser.add_argument('--get_shadow', type=str, required=False)
 parser.add_argument('--set_shadow', type=str, required=False)
 parser.add_argument('--delete_shadow', type=str, required=False)
+parser.add_argument('--create_shadow', type=str, required=False)
 parser.add_argument('--update_status', type=str, required=False)
 parser.add_argument('--send_logging', type=str, required=False)
 parser.add_argument('--download_dataset', type=str, required=False)
@@ -102,6 +103,15 @@ def load_crypto(name):
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, data)
     return (cert, key)
 
+def create_shadow(thing_name):
+    data = { "state": { "desired": { "device_status": { 'last_log_file_read_pos': 0 } } } }
+    json_data = json.dumps(data)
+    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                   key_file='%s/%s.key' % (args.cert_path, thing_name),
+                                   cert_file='%s/%s.cert' % (args.cert_path, thing_name))
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    conn.request('POST', '/things/%s/shadow' % thing_name, json_data, headers)
+    print conn.getresponse().read()
 
 if args.install:
     root_ca = aws.generate_root_cert(args.namespace)
@@ -117,6 +127,7 @@ if args.register_thing:
     root_ca = load_crypto(args.namespace)
     cert_key = aws.register_new_thing(root_ca, args.register_thing)
     save_crypto(args.register_thing, cert_key)
+    create_shadow(args.register_thing)
 
 if args.unregister_thing:
     aws.delete_iot_thing(args.unregister_thing)
@@ -151,6 +162,9 @@ if args.delete_shadow:
     conn.request('DELETE', '/things/%s/shadow' % args.delete_shadow)
     print conn.getresponse().read()
 
+if args.create_shadow:
+    create_shadow(args.create_shadow)
+
 if args.get_shadow:
     conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
                                    key_file='%s/%s.key' % (args.cert_path, args.get_shadow),
@@ -168,12 +182,12 @@ if args.update_status and args.data:
     conn.request('POST', '/things/%s/shadow' % args.update_status, json.dumps(req), headers)
     print conn.getresponse().read()
 
-if args.send_logging and args.data:
+if args.send_logging and args.file:
     conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
                                    key_file='%s/%s.key' % (args.cert_path, args.send_logging),
                                    cert_file='%s/%s.cert' % (args.cert_path, args.send_logging))
     headers = {'Content-type': 'application/octet-stream', 'Accept': 'text/plain'}
-    conn.request('POST', '/topics/%s/logging' % args.send_logging, args.data, headers)
+    conn.request('POST', '/topics/%s/logging' % args.send_logging, args.file.read(), headers)
     print conn.getresponse().read()
 
 if args.list_datasets:
