@@ -210,7 +210,6 @@ def deploy_sam_packages():
         else:
             logger.warn('Lambda function %s already installed', i[1])
 
-
 def delete_iot_pipelines():
     cli = boto3.client('iotanalytics')
     for i in IOT_PIPELINES:
@@ -294,6 +293,40 @@ def create_iot_rules():
     for i in IOT_RULES:
         lambda_arn = lookup_function_arn_by_name(i[1])
         if lambda_arn:
+            # Annoyingly this function does not return
+            # anything such as the ruleArn which would be quite useful
+            cli.create_topic_rule(ruleName=i[0],
+                                  topicRulePayload={
+                                    'sql': i[2],
+                                    'awsIotSqlVersion': '2016-03-23-beta',
+                                    'actions': [{
+                                      'lambda': {
+                                        'functionArn': lambda_arn
+                                      }
+                                    }]
+                                  })
+            rule_arn = lookup_iot_rule_arn_by_name(i[0])
+            if rule_arn:
+                lam = boto3.client('lambda')
+                lam.add_permission(FunctionName=lambda_arn,
+                                   StatementId=i[0],
+                                   Action='lambda:InvokeFunction',
+                                   Principal='iot.amazonaws.com',
+                                   SourceArn=rule_arn)
+            else:
+                logger.error('Could not add permission for rule %s to invoke lambda %s', i[0], lambda_arn)
+        else:
+            logger.error('Dependency lambda function %s is not installed', i[1])
+
+
+def update_iot_rules():
+    cli = boto3.client('iot')
+    for i in IOT_RULES:
+        lambda_arn = lookup_function_arn_by_name(i[1])
+        if lambda_arn:
+            # Delete existing topic rule
+            cli.delete_topic_rule(ruleName=i[0])
+
             # Annoyingly this function does not return
             # anything such as the ruleArn which would be quite useful
             cli.create_topic_rule(ruleName=i[0],
@@ -598,6 +631,15 @@ def install(root_ca):
     logging.info('create_iot_rules')
     create_iot_rules()
     return certificate_id
+
+
+def upgrade():
+    logging.info('delete_sam_packages')
+    delete_sam_packages()
+    logging.info('deploy_sam_packages')
+    deploy_sam_packages()
+    logging.info('update_iot_rules')
+    update_iot_rules()
 
 
 def uninstall():
