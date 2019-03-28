@@ -402,6 +402,11 @@ def delete_iot_ca_certificate(ca_cert_id):
     cli.delete_ca_certificate(certificateId=ca_cert_id)
 
 
+def get_iot_ca_certificates():
+    cli = boto3.client('iot')
+    ca_certs = cli.list_ca_certificates()
+    return [ i['certificateId'] for i in ca_certs['certificates'] ]
+
 def create_iot_policy():
     cli = boto3.client('iot')
     policies = cli.list_policies()
@@ -589,7 +594,7 @@ def install(root_ca):
     return certificate_id
 
 
-def uninstall(certificate_id):
+def uninstall():
     """Use with extreme caution! This function will delete everything that has been created
     on an AWS account, including all things, certificates, policies and any active data pipelines.
     """
@@ -597,14 +602,12 @@ def uninstall(certificate_id):
     delete_iot_rules()
     delete_sam_packages()
     delete_s3()
-    # TODO: is this needed?
-    #delete_iam_roles()
     delete_iot_things()
     delete_iot_thing_group()
-    if certificate_id:
-        logging.info('delete_iot_certificates_by_ca')
+    for certificate_id in get_iot_ca_certificates():
+        logging.info('delete_iot_certificates_by_ca(%s)', certificate_id)
         delete_iot_certificates_by_ca(certificate_id)
-        logging.info('delete_iot_ca_certificate')
+        logging.info('delete_iot_ca_certificate(%s)', certificate_id)
         delete_iot_ca_certificate(certificate_id)
     logging.info('delete_iot_policies')
     delete_iot_policies()

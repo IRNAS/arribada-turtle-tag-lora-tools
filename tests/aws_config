@@ -135,10 +135,8 @@ if args.install:
     save_cid(args.namespace, cid)
 
 if args.uninstall:
-    logger.info('Retrieving unique certificate ID from local file...')
-    cid = load_cid(args.namespace)
-    logger.info('Uninstalling CID %s from AWS for %s...', cid, args.namespace)
-    aws.uninstall(cid)
+    logger.info('Uninstalling everything from AWS for %s...', args.namespace)
+    aws.uninstall()
 
 if args.register_thing:
     logger.info('Creating certificate and keys for %s', args.register_thing)
