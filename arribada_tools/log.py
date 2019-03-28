@@ -2,9 +2,14 @@ import struct
 import logging
 import sys
 import inspect
-import binascii
+
 
 logger = logging.getLogger(__name__)
+
+
+class ExceptionLogInvalidValue(Exception):
+    pass
+
 
 def decode(data, offset):
     """Attempt to decode a single log item from an input data buffer.
@@ -197,6 +202,15 @@ class LogItem_AXL_XYZ(LogItem):
         LogItem.__init__(self, b'3h', self.fields, **kwargs)
 
 
+class LogItem_Time_Timestamp(LogItem):
+    tag = 0x12
+    name = 'Timestamp'
+    fields = ['timestamp']
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'I', self.fields, **kwargs)
+
+
 class LogItem_Time_DateTime(LogItem):
     tag = 0x04
     name = 'DateTime'
@@ -303,7 +317,7 @@ class LogItem_Bluetooth_Disabled(LogItem):
         elif self.cause == 'GEOFENCE':
             self.cause = 2
         elif self.cause == 'INACTIVITY_TIMEOUT':
-            self.cause = 2
+            self.cause = 3
         else:
             raise ExceptionLogInvalidValue
         data = LogItem.pack(self)
@@ -370,3 +384,60 @@ class LogItem_Startup(LogItem):
     def unpack(self, data):
         LogItem.unpack(self, data)
         self.cause = hex(self.cause)
+
+
+class LogItem_IOT_Status(LogItem):
+    tag = 0x20
+    name = 'IOTStatus'
+    fields = ['status']
+    allowed_status = ['DISABLED', 'IDLE', 'SAT_TRANSMITTING', 'SAT_RECEIVING', 'CELLULAR_CONNECTING',
+                      'CELLULAR_CONNECTED', 'CELLULAR_SENDING', 'CELLULAR_RECEIVING', 'CELLULAR_DISCONNECTED',
+                      'ERROR'
+                      ]
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'B', self.fields, **kwargs)
+
+    def pack(self):
+        status = self.status
+        if status in self.allowed_status:
+            self.status = self.allowed_status.index(status)
+        else:
+            raise ExceptionLogInvalidValue('%s.status must be one of %s', self.name, self.allowed_status)
+        data = LogItem.pack(self)
+        self.status = status
+        return data
+
+    def unpack(self, data):
+        LogItem.unpack(self, data)
+        try:
+            self.status = self.allowed_status[self.status]
+        except:
+            self.status = 'UNKNOWN'
+
+
+class LogItem_IOT_ConfigUpdate(LogItem):
+    tag = 0x21
+    name = 'IOTConfigUpdate'
+    fields = [ 'version', 'file_length' ]
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'II', self.fields, **kwargs)
+
+
+class LogItem_IOT_FirmwareUpdate(LogItem):
+    tag = 0x22
+    name = 'IOTFirmwareUpdate'
+    fields = [ 'version', 'file_length' ]
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'II', self.fields, **kwargs)
+
+
+class LogItem_IOT_ErrorCode(LogItem):
+    tag = 0x23
+    name = 'IOTErrorCode'
+    fields = [ 'error_code' ]
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'H', self.fields, **kwargs)

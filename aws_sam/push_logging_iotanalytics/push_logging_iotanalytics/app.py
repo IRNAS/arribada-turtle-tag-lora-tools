@@ -45,6 +45,8 @@ def lambda_handler(event, context):
             gps_pos = i
         elif i.tag == log.LogItem_Time_DateTime.tag:
             timestamp = convert_date_time_to_timestamp(i)
+        elif i.tag == log.LogItem_Time_Timestamp.tag:
+            timestamp = i.timestamp
         elif i.tag == log.LogItem_Battery_Charge.tag:
             battery_charge = i
         elif i.tag == log.LogItem_Battery_Voltage.tag:
