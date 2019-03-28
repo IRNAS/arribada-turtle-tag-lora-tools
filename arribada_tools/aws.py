@@ -564,6 +564,12 @@ def get_iot_dataset_contents(dataset):
     return [i['dataURI'] for i in resp['entries']]
 
 
+def update_iot_dataset(dataset):
+    cli = boto3.client('iotanalytics')
+    resp = cli.create_dataset_content(datasetName=dataset)
+    return resp
+
+
 def create_s3_object_and_get_presigned_url(fd):
     cli = boto3.client('s3')
     uid = str(uuid.uuid4())

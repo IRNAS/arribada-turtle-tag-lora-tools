@@ -34,6 +34,7 @@ parser.add_argument('--create_shadow', type=str, required=False)
 parser.add_argument('--update_status', type=str, required=False)
 parser.add_argument('--send_logging', type=str, required=False)
 parser.add_argument('--download_dataset', type=str, required=False)
+parser.add_argument('--update_dataset', type=str, required=False)
 parser.add_argument('--list_datasets', action='store_true', required=False)
 parser.add_argument('--data', type=str, required=False)
 parser.add_argument('--firmware_update', type=str, required=False)
@@ -222,6 +223,10 @@ if args.download_dataset:
         logger.info('Downloading data set to file %s...', k[4])
         os.system('wget --quiet --no-check-certificate "%s" -O %s' % (uri, k[4]))
 
+if args.update_dataset:
+    logger.info('Requesting data set update for %s', args.update_dataset)
+    resp = aws.update_iot_dataset(args.update_dataset)
+    print json.dumps(resp, sort_keys=True, indent=4)
 
 if args.firmware_update and args.file and args.firmware_version is not None:
 
