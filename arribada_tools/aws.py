@@ -168,8 +168,11 @@ def delete_s3():
     if check_s3():
         cli = boto3.client('s3')
         objs = cli.list_objects(Bucket=S3_BUCKET)
-        for i in objs['Contents']:
-            cli.delete_object(Bucket=S3_BUCKET, Key=i['Key'])
+        if 'Contents' not in objs:
+            logger.warn('Missing "Contents" from response to S3 list')
+        else: 
+            for i in objs['Contents']:
+                cli.delete_object(Bucket=S3_BUCKET, Key=i['Key'])
         cli.delete_bucket(Bucket=S3_BUCKET)
 
 
