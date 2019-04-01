@@ -8,6 +8,7 @@ import json
 import os
 import zipfile
 import io
+import time
 from arribada_tools import config, message, aws, __version__
 from http import client as httpcli
 
@@ -152,7 +153,17 @@ if args.register_thing:
     logger.info('Saving certificate and key files for %s', args.register_thing)
     save_crypto(args.register_thing, cert_key)
     logger.info('Creating default device shadow %s', args.register_thing)
-    create_shadow(args.register_thing)
+    retries = 3
+    while True:
+        try:
+            create_shadow(args.register_thing)
+            break
+        except Exception as e:
+            if retries == 0:
+                raise e
+            else:
+                retries = retries - 1
+                time.sleep(0.5)
 
 if args.unregister_thing:
     logger.info('Deleting device shadow %s', args.unregister_thing)
