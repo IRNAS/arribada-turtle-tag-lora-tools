@@ -370,7 +370,7 @@ class ConfigMessage_RESET_REQ(ConfigMessage):
 
     cmd = 22
     name = 'RESET_REQ'
-    allowed_reset = ['CPU', 'FLASH']
+    allowed_reset = ['CPU', 'FLASH', 'DFU']
 
     def __init__(self, **kwargs):
         ConfigMessage.__init__(self, b'B', ['reset_type'], **kwargs)
