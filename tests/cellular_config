@@ -3,6 +3,7 @@
 import argparse
 import logging
 from arribada_tools import cellular, backend, interface
+from OpenSSL import crypto
 
 
 parser = argparse.ArgumentParser()
@@ -34,8 +35,14 @@ else:
 
 cfg = cellular.CellularConfig(cellular_backend)
 
+root_ca = crypto.load_certificate(crypto.FILETYPE_PEM, args.root_ca.read())
+dev_cert = crypto.load_certificate(crypto.FILETYPE_PEM, args.cert.read())
+dev_key = crypto.load_privatekey(crypto.FILETYPE_PEM, args.key.read())
+
 cfg.delete_all()
-cfg.create_all(root_ca=args.root_ca.read(), cert=args.cert.read(), key=args.key.read())
+cfg.create_all(root_ca=crypto.dump_certificate(crypto.FILETYPE_ASN1, root_ca),
+               cert=crypto.dump_certificate(crypto.FILETYPE_ASN1, dev_cert),
+               key=crypto.dump_privatekey(crypto.FILETYPE_ASN1, dev_key))
 
 if bridged_backend:
     interface.ConfigInterface(bridged_backend).cellular_config(False)

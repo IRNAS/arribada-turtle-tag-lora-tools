@@ -5,7 +5,8 @@ import serial
 
 logger = logging.getLogger(__name__)
 
-_timeout = 0.5
+
+_timeout = 0.75
 
 
 class ExceptionCellularCommsTimeoutError(Exception):
@@ -26,7 +27,7 @@ class CellularSerialBackend(object):
                                      stopbits=serial.STOPBITS_ONE,
                                      timeout=timeout,
                                      rtscts=True,
-                                     inter_byte_timeout=0.1)
+                                     inter_byte_timeout=None)
 
     def read(self, length=512):
         return self._serial.read(length)
