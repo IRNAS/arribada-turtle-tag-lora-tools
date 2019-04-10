@@ -1063,6 +1063,8 @@ class ConfigItem_IOT_Cellular(ConfigItem):
                     self.statusFilter = self.statusFilter | (1 << self.allowed_status_filter.index(i))
                 else:
                     raise ExceptionConfigInvalidValue('statusFilter must be one of %s' % self.allowed_status_filter)
+            if self.logFilter > 0 and not self.statusFilter & (1 << self.allowed_status_filter.index('LAST_LOG_READ_POS')):
+                raise ExceptionConfigInvalidValue('statusFilter must contain LAST_LOG_READ_POS if logging (logFilter) is enabled')
         else:
             raise ExceptionConfigInvalidValue('statusFilter is a mandatory parameter')
 
