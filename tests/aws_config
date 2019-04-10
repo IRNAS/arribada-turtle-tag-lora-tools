@@ -10,7 +10,10 @@ import zipfile
 import io
 import time
 from arribada_tools import config, message, aws, __version__
-from http import client as httpcli
+try:
+    from http import client as httpcli
+except:
+    import httplib as httpcli
 
 
 logger = logging.getLogger(__name__)
