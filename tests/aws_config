@@ -313,7 +313,6 @@ if args.configuration_update and args.file:
     data = data + message.ConfigMessage_CFG_WRITE_REQ(length=len(config_data)).pack()
     data = data + config_data
     data = data + message.ConfigMessage_CFG_SAVE_REQ().pack()
-    data = data + message.ConfigMessage_RESET_REQ(reset_type='CPU').pack()
 
     # Generate new S3 object and get pre-signed URL
     logger.info('Uploading configuration data length %s to AWS...', len(config_data))
