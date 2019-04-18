@@ -2,5 +2,6 @@ include LICENSE
 include MANIFEST.in
 include README.rst
 
-recursive-include tests *.sh
-recursive-include pysensor_test/imports *
+recursive-include aws_sam
+recursive-include certificates
+recursive-include sample_config

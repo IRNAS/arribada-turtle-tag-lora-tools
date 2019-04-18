@@ -24,7 +24,9 @@ def str_error(error_code):
       'CMD_ERROR_INVALID_PARAMETER',
       'CMD_ERROR_INVALID_FW_IMAGE_TYPE',
       'CMD_ERROR_IMAGE_CRC_MISMATCH',
-      'CMD_ERROR_FILE_INCOMPATIBLE' ]
+      'CMD_ERROR_FILE_INCOMPATIBLE',
+      'CMD_ERROR_CELLULAR_COMMS'
+      ]
     if error_code >= len(errors):
         return 'ERROR_UNKNOWN'
     return errors[error_code]
@@ -279,12 +281,14 @@ class ConfigMessage_STATUS_RESP(ConfigMessage):
     name = 'STATUS_RESP'
 
     def __init__(self, **kwargs):
-        ConfigMessage.__init__(self, b'BIIII???',
+        ConfigMessage.__init__(self, b'BIIIQ???16s?',
                                ['error_code', 'fw_version',
                                 'reserved', 'cfg_version',
                                 'unique_device_identifier',
                                 'gps_module_detected',
                                 'cellular_module_detected',
+                                'sim_card_present',
+                                'sim_card_imsi',
                                 'satellite_module_detected'
                                 ], **kwargs)
 

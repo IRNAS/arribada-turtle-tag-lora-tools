@@ -31,7 +31,7 @@ setup(
         'python-dateutil >= 2.6.1',
         'libusb1 >= 1.6.4',
         'awscli >= 1.16.105',
-        'aws-sam-cli >= 0.14.2',
+        'aws-sam-cli >= 0.15.0',
         'botocore >= 1.12.116',
         'boto3 >= 1.9.116',
         'cryptography >= 2.4.2',

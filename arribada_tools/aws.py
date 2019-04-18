@@ -547,6 +547,10 @@ def register_root_ca(root_ca):
 
 def register_new_thing(root_ca, thing_name):
 
+    # Make sure thing_name is not already registered
+    if thing_name in list_iot_registered_things():
+        raise Exception('"%s" is already registered' % thing_name)
+
     cert = generate_cert_from_root(root_ca, thing_name)
 
     cli = boto3.client('iot')
