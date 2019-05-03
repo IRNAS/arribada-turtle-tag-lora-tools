@@ -143,3 +143,13 @@ class CellularConfig(object):
         self._create(0, 'root-CA.pem', root_ca)
         self._create(1, 'deviceCert.pem', cert)
         self._create(2, 'deviceCert.key', key)
+
+    def disable_auto_attach(self):
+        cmd = 'AT+COPS=2\r'
+        logger.debug('send: %s', cmd.strip())
+        self._backend.write(cmd)
+        self._expect('OK')
+        cmd = 'AT&W0\r'
+        logger.debug('send: %s', cmd.strip())
+        self._backend.write(cmd)
+        self._expect('OK')

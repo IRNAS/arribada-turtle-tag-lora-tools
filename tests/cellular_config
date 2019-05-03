@@ -43,6 +43,7 @@ cfg.delete_all()
 cfg.create_all(root_ca=crypto.dump_certificate(crypto.FILETYPE_ASN1, root_ca),
                cert=crypto.dump_certificate(crypto.FILETYPE_ASN1, dev_cert),
                key=crypto.dump_privatekey(crypto.FILETYPE_ASN1, dev_key))
+cfg.disable_auto_attach()
 
 if bridged_backend:
     interface.ConfigInterface(bridged_backend).cellular_config(False)
