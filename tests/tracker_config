@@ -94,7 +94,7 @@ try:
         cfg.test_mode(args.test_mode)
     
     if args.status:
-        print json.dumps(cfg.get_status())
+        print json.dumps(cfg.get_status(), indent=4)
     
     if args.battery:
         print json.dumps(cfg.get_battery_status())

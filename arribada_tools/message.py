@@ -292,6 +292,13 @@ class ConfigMessage_STATUS_RESP(ConfigMessage):
                                 'satellite_module_detected'
                                 ], **kwargs)
 
+    def unpack(self, data):
+        ConfigMessage.unpack(self, data)
+        self.reserved = ""
+        if not self.cellular_module_detected:
+            self.sim_card_imsi = "N/A"
+            self.sim_card_present = "N/A"
+
 
 class ConfigMessage_FW_SEND_IMAGE_REQ(ConfigMessage):
 
