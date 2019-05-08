@@ -369,7 +369,7 @@ class ConfigItem_GPS_LogDebugEnable(ConfigItem):
 
 
 class ConfigItem_GPS_MaxFixes(ConfigItem):
-    tag = 0x0008
+    tag = 0x0009
     path = 'gps'
     params = ['maxFixes']
     json_params = params
