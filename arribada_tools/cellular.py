@@ -6,10 +6,11 @@ import serial
 logger = logging.getLogger(__name__)
 
 
-_timeout = 0.75
+# Default timeout on all commands
+_timeout = 2.0
 
 
-class ExceptionCellularCommsTimeoutError(Exception):
+class ExceptionCellularCommsError(Exception):
     pass
 
 
@@ -29,12 +30,20 @@ class CellularSerialBackend(object):
                                      rtscts=True,
                                      inter_byte_timeout=None)
 
-    def read(self, length=512):
+    def read_until(self, length=512, expected='\r\n', timeout=_timeout):
+        self._serial.timeout = timeout
+        return self._serial.read_until(expected, length)
+
+    def read(self, length=512, timeout=_timeout):
+        self._serial.timeout = timeout
         return self._serial.read(length)
 
     def write(self, data):
         self._serial.write(data)
 
+    def flush(self):
+        self._serial.reset_input_buffer()
+        
     def cleanup(self):
         pass
 
@@ -45,23 +54,41 @@ class CellularBridgedBackend(object):
     def __init__(self, backend):
         self._backend = backend
 
-    def read(self, length=512):
+    def flush(self):
+        while (self.read(timeout=1.0)):
+            pass
+        
+    def read_until(self, length=512, expected='\r\n', timeout=_timeout):
+        while True:
+            cmd = message.ConfigMessage_CELLULAR_READ_REQ(length=length)
+            resp = self._backend.command_response(cmd, timeout)
+            if not resp or resp.name != 'Cellular_READ_RESP' or resp.error_code:
+                logger.error('Bad response to Cellular_READ_REQ')
+                raise ExceptionCellularCommsError
+            if (resp.length > 0):
+                data = self._backend.read(resp.length, timeout)
+                if expected in data:
+                    return data
+            else:
+                return b''
+
+    def read(self, length=512, timeout=_timeout):
         cmd = message.ConfigMessage_CELLULAR_READ_REQ(length=length)
-        resp = self._backend.command_response(cmd, _timeout)
+        resp = self._backend.command_response(cmd, timeout)
         if not resp or resp.name != 'Cellular_READ_RESP' or resp.error_code:
             logger.error('Bad response to Cellular_READ_REQ')
-            raise ExceptionCellularCommsTimeoutError
+            raise ExceptionCellularCommsError
         if (resp.length > 0):
-            return self._backend.read(resp.length, _timeout)
+            return self._backend.read(resp.length, timeout)
         return b''
 
-    def write(self, data):
+    def write(self, data, timeout=_timeout):
         cmd = message.ConfigMessage_CELLULAR_WRITE_REQ(length=len(data));
-        resp = self._backend.command_response(cmd, _timeout)
+        resp = self._backend.command_response(cmd, timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
             logger.error('Bad response to Cellular_WRITE_REQ')
-            raise ExceptionCellularCommsTimeoutError
-        self._backend.write(data, _timeout)
+            raise ExceptionCellularCommsError
+        self._backend.write(data, timeout)
 
     def cleanup(self):
         self._backend.cleanup
@@ -75,18 +102,17 @@ class CellularConfig(object):
         self._sync_comms()
         self._disable_local_echo()
 
-    def _expect(self, expected):
-        resp = self._backend.read()
+    def _expect(self, expected, timeout=_timeout):
+        resp = self._backend.read_until(expected=expected, timeout=timeout)
         logger.debug('read: %s exp: %s', resp.strip(), expected)
         if resp:
             if expected not in resp:
                 raise ExceptionCellularUnexpectedResponse('Got %s but expected %s' % (resp, expected))
         else:
-            raise ExceptionCellularCommsTimeoutError()
+            raise ExceptionCellularCommsError
 
     def _flush(self):
-        while (self._backend.read()):
-            pass
+        self._backend.flush()
 
     def _disable_local_echo(self):
         self._flush()
@@ -148,8 +174,11 @@ class CellularConfig(object):
         cmd = 'AT+COPS=2\r'
         logger.debug('send: %s', cmd.strip())
         self._backend.write(cmd)
-        self._expect('OK')
+        # COPS=2 may take up to 30 seconds
+        self._expect('OK', timeout=30)
+        logger.info('COPS=2 set successfully')
         cmd = 'AT&W0\r'
         logger.debug('send: %s', cmd.strip())
         self._backend.write(cmd)
         self._expect('OK')
+        logger.info('Settings saved successfully')
