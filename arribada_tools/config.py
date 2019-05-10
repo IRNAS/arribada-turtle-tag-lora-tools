@@ -1157,6 +1157,55 @@ class ConfigItem_IOT_Cellular_AWS(ConfigItem):
         self.deviceShadowPath = self.deviceShadowPath.rstrip('\x00')
 
 
+
+class ConfigItem_IOT_Cellular_APN(ConfigItem):
+    tag = 0x0A03
+    path = 'iot.cellular.apn'
+    params = ['name', 'username', 'password']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'128s32s32s', self.params, **kwargs)
+        if not hasattr(self, 'username'):
+            self.username = ''
+        if not hasattr(self, 'password'):
+            self.password = ''
+
+    def pack(self):
+
+        if not hasattr(self, 'name'):
+            raise ExceptionConfigInvalidValue('name is a mandatory parameter')
+
+        if len(self.name.encode('ascii', 'ignore')) > 127: # N-1 the last must be a null '\0'
+            raise ExceptionConfigInvalidValue('name length must not exceed 127 bytes')
+        name = self.name
+        self.name = self.name.encode('ascii', 'ignore')
+
+        if len(self.username.encode('ascii', 'ignore')) > 31: # N-1 the last must be a null '\0'
+            raise ExceptionConfigInvalidValue('username must not exceed 31 bytes')
+        username = self.username
+        self.username = self.username.encode('ascii', 'ignore')
+
+        if len(self.password.encode('ascii', 'ignore')) > 31: # N-1 the last must be a null '\0'
+            raise ExceptionConfigInvalidValue('password length must not exceed 31 bytes')
+        password = self.password
+        self.password = self.password.encode('ascii', 'ignore')
+
+        data = ConfigItem.pack(self)
+
+        self.name = name
+        self.username = username
+        self.password = password
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+        # Remove null characters
+        self.name = self.name.rstrip('\x00')
+        self.username = self.username.rstrip('\x00')
+        self.password = self.password.rstrip('\x00')
+
+
 class ConfigItem_Battery_LogEnable(ConfigItem):
     tag = 0x0900
     path = 'battery'
