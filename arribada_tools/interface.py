@@ -34,6 +34,16 @@ class ConfigInterface(object):
     def __init__(self, backend):
         self._backend = backend
 
+    def _erase_config(self):
+        cmd = message.ConfigMessage_CFG_ERASE_REQ(cfg_tag=0xFFFF)
+        resp = self._backend.command_response(cmd, self.timeout)
+        resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
+    
+    def _save_config(self):
+        cmd = message.ConfigMessage_CFG_SAVE_REQ()
+        resp = self._backend.command_response(cmd, self.timeout)
+        resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
+
     def gps_config(self, enable):
         cmd = message.ConfigMessage_GPS_CONFIG_REQ(enable=enable)
         resp = self._backend.command_response(cmd, self.timeout)
@@ -45,6 +55,7 @@ class ConfigInterface(object):
         resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
 
     def write_json_configuration(self, json):
+        self._erase_config()
         objs = config.json_loads(json)
         config_data = config.encode_all(objs)
         cmd = message.ConfigMessage_CFG_WRITE_REQ(length=len(config_data))
@@ -56,6 +67,7 @@ class ConfigInterface(object):
             raise ExceptionBackendCommsError
         resp = self._backend.command_response(None, self.timeout)
         resp_error_handler(cmd.name, resp, 'CFG_WRITE_CNF')
+        self._save_config()
 
     def read_json_configuration(self, tag=0xFFFF):
         cmd = message.ConfigMessage_CFG_READ_REQ(cfg_tag=tag)
@@ -79,20 +91,15 @@ class ConfigInterface(object):
         resp = self._backend.command_response(cmd, self.timeout)
         resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
 
-    def erase_configuration(self, tag=0xFFFF):
-        cmd = message.ConfigMessage_CFG_ERASE_REQ(cfg_tag=tag)
-        resp = self._backend.command_response(cmd, self.timeout)
-        resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
+    def erase_configuration(self):
+        self._erase_config()
+        self._save_config()
 
     def restore_configuration(self):
-        cmd = message.ConfigMessage_CFG_RESTORE_REQ()
-        resp = self._backend.command_response(cmd, self.timeout)
-        resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
+        logger.warn('restore_configuration is deprecated')
 
     def save_configuration(self):
-        cmd = message.ConfigMessage_CFG_SAVE_REQ()
-        resp = self._backend.command_response(cmd, self.timeout)
-        resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
+        logger.warn('save_configuration is deprecated')
 
     def create_log_file(self, file_type, sync_enable=False, max_size=0):
         cmd = message.ConfigMessage_LOG_CREATE_REQ(mode=file_type,
@@ -152,7 +159,7 @@ class ConfigInterface(object):
         if resp.cfg_version != config.__version__:
             logger.warn('Board firmware configuration version is V%u but tool expects V%u', resp.cfg_version, config.__version__)
         return message.convert_to_dict(resp)
-#
+
     def test_mode(self, test_mode):
         cmd = message.ConfigMessage_TEST_REQ(test_mode=test_mode)
         resp = self._backend.command_response(cmd, self.timeout)
