@@ -141,6 +141,8 @@ class ConfigInterface(object):
     def reset(self, reset_type):
         cmd = message.ConfigMessage_RESET_REQ(reset_type=reset_type)
         if (reset_type == 'FLASH'):
+            # Erase RAM copy of configuration before full FLASH reset
+            self._erase_config()
             resp = self._backend.command_response(cmd, 40) # The FLASH erase takes ~30 seconds
         else:
             resp = self._backend.command_response(cmd, self.timeout)
