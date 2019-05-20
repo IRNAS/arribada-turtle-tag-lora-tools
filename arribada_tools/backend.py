@@ -76,11 +76,6 @@ class BackendUsb(_Backend):
             self._usb = pyusb.UsbHost()
         except:
             raise ExceptionBackendNotFound
-        while True:
-            resp = self._usb.read(pyusb.EP_MSG_IN, 512, 50)
-            resp.wait()
-            if resp.status == -1:
-                break
 
     def command_response(self, command, timeout=None):
         """Send a command (optionally) over USB and wait for a response to come back.

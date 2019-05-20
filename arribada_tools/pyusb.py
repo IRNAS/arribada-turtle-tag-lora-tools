@@ -142,6 +142,16 @@ class UsbHost():
         iface = self.dev[0][(0,0)]   # Configuration #0 Interface #0
         self._endpoints = map(UsbOverlappedEndpoint, iface.endpoints())
 
+        # Read all avaliable data to flush the targets TX buffer
+        start_log_level = logger.getLevelName()
+        logger.setLevel(logging.CRITICAL)
+        while True:
+            resp = self._endpoints[EP_MSG_IN].read(512, 50)
+            resp.wait()
+            if resp.status == -1:
+                break
+        logger.setLevel(start_log_level)
+
     def read(self, idx, length, timeout=None):
         logger.debug('USB read ep %u', idx)
         return self._endpoints[idx].read(length, timeout)
