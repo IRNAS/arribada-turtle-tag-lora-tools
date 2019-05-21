@@ -1,7 +1,10 @@
 import pyusb
 import message
 from array import array
-from ble import BluetoothTracker
+try: # BLE is currently not supported on Windows
+    from ble import BluetoothTracker
+except:
+    pass
 import time
 
 class ExceptionBackendNotFound(Exception):
