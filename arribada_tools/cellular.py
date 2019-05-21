@@ -1,7 +1,8 @@
+import hashlib
 import message
 import logging
 import serial
-
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -62,11 +63,12 @@ class CellularBridgedBackend(object):
         while True:
             cmd = message.ConfigMessage_CELLULAR_READ_REQ(length=length)
             resp = self._backend.command_response(cmd, timeout)
-            if not resp or resp.name != 'Cellular_READ_RESP' or resp.error_code:
-                logger.error('Bad response to Cellular_READ_REQ')
+            if not resp or resp.name != 'CELLULAR_READ_RESP' or resp.error_code:
+                logger.error('Bad response to CELLULAR_READ_REQ')
                 raise ExceptionCellularCommsError
             if (resp.length > 0):
                 data = self._backend.read(resp.length, timeout)
+                data = "".join(map(chr, data))
                 if expected in data:
                     return data
             else:
@@ -75,9 +77,9 @@ class CellularBridgedBackend(object):
     def read(self, length=512, timeout=_timeout):
         cmd = message.ConfigMessage_CELLULAR_READ_REQ(length=length)
         resp = self._backend.command_response(cmd, timeout)
-        if not resp or resp.name != 'Cellular_READ_RESP' or resp.error_code:
-            logger.error('Bad response to Cellular_READ_REQ')
-            raise ExceptionCellularCommsError
+        if not resp or resp.name != 'CELLULAR_READ_RESP' or resp.error_code:
+            logger.error('Bad response to CELLULAR_READ_REQ')
+            raise ExceptionCellularCommsError()
         if (resp.length > 0):
             return self._backend.read(resp.length, timeout)
         return b''
@@ -86,8 +88,8 @@ class CellularBridgedBackend(object):
         cmd = message.ConfigMessage_CELLULAR_WRITE_REQ(length=len(data));
         resp = self._backend.command_response(cmd, timeout)
         if not resp or resp.name != 'GENERIC_RESP' or resp.error_code:
-            logger.error('Bad response to Cellular_WRITE_REQ')
-            raise ExceptionCellularCommsError
+            logger.error('Bad response to CELLULAR_WRITE_REQ')
+            raise ExceptionCellularCommsError()
         self._backend.write(data, timeout)
 
     def cleanup(self):
@@ -103,13 +105,14 @@ class CellularConfig(object):
         self._disable_local_echo()
 
     def _expect(self, expected, timeout=_timeout):
+        time.sleep(0.1)
         resp = self._backend.read_until(expected=expected, timeout=timeout)
         logger.debug('read: %s exp: %s', resp.strip(), expected)
         if resp:
             if expected not in resp:
                 raise ExceptionCellularUnexpectedResponse('Got %s but expected %s' % (resp, expected))
         else:
-            raise ExceptionCellularCommsError
+            raise ExceptionCellularCommsError()
 
     def _flush(self):
         self._backend.flush()
@@ -148,7 +151,9 @@ class CellularConfig(object):
         self._backend.write(cmd)
         self._expect('>')
         self._backend.write(data)
-        self._expect('OK')
+        time.sleep(0.5)
+        md5sum = hashlib.md5(data).hexdigest()
+        self._expect('+USECMNG: 0,%u,"%s","%s"\r\n\r\nOK' % (index, name, md5sum))
         logger.info('%s added successfully', name)
 
     def delete_all(self):
