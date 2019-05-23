@@ -15,6 +15,14 @@ def convert_date_time_to_timestamp(t):
     return int(time.mktime(dt.timetuple()))
 
 
+def send_batch_messages(client, channel_name, messages):
+    # Send messages in chunks to avoid hitting AWS service limits
+    chunk_size = 100
+    for chunk in xrange(0, len(messages), chunk_size):
+        resp = client.batch_put_message(channelName=channel_name, messages=messages[chunk:chunk+chunk_size])
+        logger.debug('resp=%s', resp)
+
+
 def lambda_handler(event, context):
 
     thing_name = event['thing_name']
@@ -113,12 +121,10 @@ def lambda_handler(event, context):
             timestamp = None
 
     if iot_gps_messages:
-        resp = iot_client.batch_put_message(channelName='arribada_gps_location', messages=iot_gps_messages)
-        logger.debug('resp=%s', resp)
+        send_batch_messages(iot_client, 'arribada_gps_location', iot_gps_messages)
 
     if iot_battery_messages:
-        resp = iot_client.batch_put_message(channelName='arribada_battery_charge', messages=iot_battery_messages)
-        logger.debug('resp=%s', resp)
+        send_batch_messages(iot_client, 'arribada_battery_charge', iot_battery_messages)
 
     return {
         "statusCode": 200
