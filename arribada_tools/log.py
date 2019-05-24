@@ -390,9 +390,9 @@ class LogItem_IOT_Status(LogItem):
     tag = 0x20
     name = 'IOTStatus'
     fields = ['status']
-    allowed_status = ['DISABLED', 'IDLE', 'SAT_TRANSMITTING', 'SAT_RECEIVING', 'CELLULAR_CONNECTING',
-                      'CELLULAR_CONNECTED', 'CELLULAR_SENDING', 'CELLULAR_RECEIVING', 'CELLULAR_DISCONNECTED',
-                      'ERROR'
+    allowed_status = ['CELLULAR_POWERED_OFF', 'CELLULAR_POWERED_ON', 'CELLULAR_CONNECT',
+                      'CELLULAR_FETCH_DEVICE_SHADOW', 'CELLULAR_SEND_LOGGING', 'CELLULAR_SEND_DEVICE_STATUS',
+                      'CELLULAR_MAX_BACKOFF_REACHED', 'CELLULAR_DOWNLOAD_FIRMWARE', 'CELLULAR_DOWNLOAD_CONFIG'
                       ]
 
     def __init__(self, **kwargs):
@@ -440,4 +440,4 @@ class LogItem_IOT_ErrorCode(LogItem):
     fields = [ 'error_code' ]
 
     def __init__(self, **kwargs):
-        LogItem.__init__(self, b'H', self.fields, **kwargs)
+        LogItem.__init__(self, b'h', self.fields, **kwargs)
