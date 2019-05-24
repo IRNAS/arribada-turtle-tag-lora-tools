@@ -119,8 +119,13 @@ class UsbHost():
     def __init__(self):
         self._endpoints = []
         dev = usb.core.find(find_all=True)
-
-        devs = [cfg for cfg in dev if usb.util.get_string(cfg, cfg.iManufacturer) == UsbHost.MANUFACTURER and usb.util.get_string(cfg, cfg.iProduct) == UsbHost.PRODUCT]
+        devs = []
+        for cfg in dev: 
+            try:
+                if usb.util.get_string(cfg, cfg.iManufacturer) == UsbHost.MANUFACTURER and usb.util.get_string(cfg, cfg.iProduct) == UsbHost.PRODUCT:
+                    devs.append(cfg)
+            except:
+                pass
         if not devs:
             raise ExceptionUsbDeviceNotFound
         # Allow USB_INDEX environment variable to set which device in the
@@ -141,6 +146,15 @@ class UsbHost():
             raise ExceptionUsbDeviceFailedToClaim
         iface = self.dev[0][(0,0)]   # Configuration #0 Interface #0
         self._endpoints = map(UsbOverlappedEndpoint, iface.endpoints())
+        # Read all avaliable data to flush the targets TX buffer
+        start_log_level = logger.getEffectiveLevel()
+        logger.setLevel(logging.CRITICAL)
+        while True:
+            resp = self._endpoints[EP_MSG_IN].read(512, 50)
+            resp.wait()
+            if resp.status == -1:
+                break
+        logger.setLevel(start_log_level)
 
     def read(self, idx, length, timeout=None):
         logger.debug('USB read ep %u', idx)

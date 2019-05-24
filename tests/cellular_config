@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import sys
 from arribada_tools import cellular, backend, interface
 from OpenSSL import crypto
 
@@ -16,40 +17,43 @@ parser.add_argument('--key', type=argparse.FileType('r'), required=True)
 parser.add_argument('--debug', action='store_true', required=False)
 args = parser.parse_args()
 
-if args.debug:
-    logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.DEBUG)
-else:
-    logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.INFO)
-
-bridged_backend = None
-
-if args.serial:
-    cellular_backend = cellular.CellularSerialBackend(args.serial, baudrate=args.baud)
-else:
-    if args.bluetooth_addr:
-        bridged_backend = backend.BackendBluetooth(dev_addr=args.bluetooth_addr)
+try:
+    if args.debug:
+        logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.DEBUG)
     else:
-        bridged_backend = backend.BackendUsb()
-    cellular_backend = cellular.CellularBridgedBackend(bridged_backend)
-    interface.ConfigInterface(bridged_backend).cellular_config(True)
-
-cfg = cellular.CellularConfig(cellular_backend)
-
-root_ca = crypto.load_certificate(crypto.FILETYPE_PEM, args.root_ca.read())
-dev_cert = crypto.load_certificate(crypto.FILETYPE_PEM, args.cert.read())
-dev_key = crypto.load_privatekey(crypto.FILETYPE_PEM, args.key.read())
-
-cfg.delete_all()
-cfg.create_all(root_ca=crypto.dump_certificate(crypto.FILETYPE_ASN1, root_ca),
-               cert=crypto.dump_certificate(crypto.FILETYPE_ASN1, dev_cert),
-               key=crypto.dump_privatekey(crypto.FILETYPE_ASN1, dev_key))
-cfg.disable_auto_attach()
-
-if bridged_backend:
-    interface.ConfigInterface(bridged_backend).cellular_config(False)
-
-if bridged_backend:
-    bridged_backend.cleanup()
+        logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.INFO)
+    
+    bridged_backend = None
+    
+    if args.serial:
+        cellular_backend = cellular.CellularSerialBackend(args.serial, baudrate=args.baud)
+    else:
+        if args.bluetooth_addr:
+            bridged_backend = backend.BackendBluetooth(dev_addr=args.bluetooth_addr)
+        else:
+            bridged_backend = backend.BackendUsb()
+        cellular_backend = cellular.CellularBridgedBackend(bridged_backend)
+        interface.ConfigInterface(bridged_backend).cellular_config(True)
+    
+    cfg = cellular.CellularConfig(cellular_backend)
+    
+    root_ca = crypto.load_certificate(crypto.FILETYPE_PEM, args.root_ca.read())
+    dev_cert = crypto.load_certificate(crypto.FILETYPE_PEM, args.cert.read())
+    dev_key = crypto.load_privatekey(crypto.FILETYPE_PEM, args.key.read())
+    
+    cfg.delete_all()
+    cfg.create_all(root_ca=crypto.dump_certificate(crypto.FILETYPE_ASN1, root_ca),
+                   cert=crypto.dump_certificate(crypto.FILETYPE_ASN1, dev_cert),
+                   key=crypto.dump_privatekey(crypto.FILETYPE_ASN1, dev_key))
+    cfg.disable_auto_attach()
+    
+    if bridged_backend:
+        interface.ConfigInterface(bridged_backend).cellular_config(False)
+    
+    if bridged_backend:
+        bridged_backend.cleanup()
+except:
+    print "Unexpected error: %s" % str(sys.exc_info())
 
 if cellular_backend:
     cellular_backend.cleanup()
