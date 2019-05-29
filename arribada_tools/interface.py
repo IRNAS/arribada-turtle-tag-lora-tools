@@ -54,8 +54,9 @@ class ConfigInterface(object):
         resp = self._backend.command_response(cmd, self.timeout)
         resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
 
-    def write_json_configuration(self, json):
-        self._erase_config()
+    def write_json_configuration(self, json, erase=True):
+        if erase:
+            self._erase_config()
         objs = config.json_loads(json)
         config_data = config.encode_all(objs)
         cmd = message.ConfigMessage_CFG_WRITE_REQ(length=len(config_data))
