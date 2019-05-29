@@ -169,8 +169,6 @@ if args.register_thing:
                 time.sleep(0.5)
 
 if args.unregister_thing:
-    logger.info('Deleting device shadow %s', args.unregister_thing)
-    delete_shadow(args.unregister_thing)
     logger.info('Deleting thing %s from AWS', args.unregister_thing)
     aws.delete_iot_thing(args.unregister_thing)
 
