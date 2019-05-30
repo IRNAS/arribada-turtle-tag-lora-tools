@@ -546,3 +546,18 @@ class ConfigMessage_TEST_REQ(ConfigMessage):
             if self.test_mode & (1<<self.allowed_test_mode.index(i)):
                 test_mode.append(i)
         self.test_mode = test_mode
+
+
+class ConfigMessage_FLASH_DOWNLOAD_REQ(ConfigMessageHeader):
+
+    cmd = 34
+    name = 'FLASH_DOWNLOAD_REQ'
+
+
+class ConfigMessage_FLASH_DOWNLOAD_RESP(ConfigMessage):
+
+    cmd = 35
+    name = 'FLASH_DOWNLOAD_RESP'
+
+    def __init__(self, **kwargs):
+        ConfigMessage.__init__(self, b'BI', ['error_code', 'length'], **kwargs)

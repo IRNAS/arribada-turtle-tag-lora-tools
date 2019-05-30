@@ -167,3 +167,10 @@ class ConfigInterface(object):
         cmd = message.ConfigMessage_TEST_REQ(test_mode=test_mode)
         resp = self._backend.command_response(cmd, self.timeout)
         resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
+
+    def read_flash_file(self):
+        cmd = message.ConfigMessage_FLASH_DOWNLOAD_REQ()
+        resp = self._backend.command_response(cmd, self.timeout)
+        resp_error_handler(cmd.name, resp, 'FLASH_DOWNLOAD_RESP')
+        logger.debug('Downloading flash file of size: ', resp.length)
+        return self._backend.read(resp.length, self.timeout)

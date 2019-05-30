@@ -12,6 +12,7 @@ parser.add_argument('--debug', action='store_true', required=False)
 parser.add_argument('--write', type=argparse.FileType('r'), required=False)
 parser.add_argument('--read', type=argparse.FileType('w'), required=False)
 parser.add_argument('--read_log', type=argparse.FileType('wb'), required=False)
+parser.add_argument('--read_flash', type=argparse.FileType('wb'), required=False)
 parser.add_argument('--battery', action='store_true', required=False)
 parser.add_argument('--status', action='store_true', required=False)
 parser.add_argument('--save', action='store_true', required=False)
@@ -104,6 +105,9 @@ try:
 
     if args.firmware_type and args.firmware:
         cfg.fw_upgrade(args.firmware_type, args.firmware.read())
+
+    if args.read_flash:
+        args.read_flash.write(cfg.read_flash_file())
 except:
     print "Unexpected error: %s" % str(sys.exc_info())
 
