@@ -3,6 +3,7 @@ import os
 import logging
 import random
 import uuid
+import string
 
 from OpenSSL import crypto
 
@@ -151,6 +152,25 @@ def check_s3():
     cli = boto3.client('s3')
     buckets = [ b['Name'] for b in cli.list_buckets()['Buckets'] ]
     return S3_BUCKET in buckets
+
+
+def validate_name(name):
+    if len(name) < 3 or len(name) > 63:
+        raise Exception('Name length must be between 3 and 63 characters')
+    valid_chars = string.ascii_lowercase + '.' + '-' + string.digits
+    for char in name:
+        if char not in valid_chars:
+            raise Exception('Name may only use characters from set "%s"' % valid_chars)
+    if name[0] not in string.ascii_lowercase and name[0] not in string.digits:
+        raise Exception('Name first char must begin with letter or number')
+    if name[-1] == '-':
+        raise Exception('Name may not end with a "-"')
+    if '..' in name:
+        raise Exception('Name may not contain consecutive "." chars')
+    if '-.' in name or '.-' in name:
+        raise Exception('Name may not use adjacent "-" and "."')
+    if '.' in name and True not in [i in string.ascii_lowercase for i in name.replace('.', '')]:
+        raise Exception('Name may not be formatted as an IP address')
 
 
 def create_s3():
@@ -623,6 +643,9 @@ def install(root_ca):
     """This registers a root CA certificate, IOT group, policies, etc.
        This action need only be done once
     """
+    validate_name(S3_BUCKET)
+    validate_name(IOT_GROUP)
+    validate_name(IOT_POLICY)
     logging.info('register_root_ca')
     certificate_id = register_root_ca(root_ca)
     logging.info('create_iot_policy')
