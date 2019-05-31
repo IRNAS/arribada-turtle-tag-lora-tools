@@ -134,7 +134,13 @@ if args.install:
     logger.info('Generating root CA certificate for %s...', args.namespace)
     root_ca = aws.generate_root_cert(args.namespace)
     logger.info('Installing %s onto AWS...', args.namespace)
-    cid = aws.install(root_ca)
+    try:
+        cid = aws.install(root_ca)
+    except:
+        logger.error('Installation error...trying to clean up')
+        aws.uninstall()
+        raise
+
     logger.info('Saving certificate and keys for %s...', args.namespace)
     save_crypto(args.namespace, root_ca)
     logger.info('Saving unique certificate ID %s from AWS for %s...', cid, args.namespace)
