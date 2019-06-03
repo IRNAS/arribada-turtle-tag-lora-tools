@@ -161,6 +161,7 @@ class CellularConfig(object):
         logger.debug('send: %s', cmd.strip())
         self._flush()
         self._backend.write(cmd)
+        time.sleep(0.5)
         md5sum = hashlib.md5(data).hexdigest()
         self._expect('+USECMNG: 4,%u,"%s","%s"\r\n\r\nOK' % (index, name, md5sum))
         logger.info('%s verified successfully', name)
