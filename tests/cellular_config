@@ -57,10 +57,11 @@ try:
     if bridged_backend:
         interface.ConfigInterface(bridged_backend).cellular_config(False)
     
-    if bridged_backend:
-        bridged_backend.cleanup()
 except:
     print "Unexpected error: %s" % str(sys.exc_info())
 
 if cellular_backend:
     cellular_backend.cleanup()
+
+if bridged_backend:
+    bridged_backend.cleanup()
