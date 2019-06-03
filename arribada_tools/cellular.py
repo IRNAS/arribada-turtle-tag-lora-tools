@@ -156,6 +156,15 @@ class CellularConfig(object):
         self._expect('+USECMNG: 0,%u,"%s","%s"\r\n\r\nOK' % (index, name, md5sum))
         logger.info('%s added successfully', name)
 
+    def _verify(self, index, name, data):
+        cmd = 'AT+USECMNG=4,%u,"%s"\r' % (index, name)
+        logger.debug('send: %s', cmd.strip())
+        self._flush()
+        self._backend.write(cmd)
+        md5sum = hashlib.md5(data).hexdigest()
+        self._expect('+USECMNG: 4,%u,"%s","%s"\r\n\r\nOK' % (index, name, md5sum))
+        logger.info('%s verified successfully', name)
+
     def delete_all(self):
         try:
             self._delete(0, 'root-CA.pem')
@@ -174,6 +183,11 @@ class CellularConfig(object):
         self._create(0, 'root-CA.pem', root_ca)
         self._create(1, 'deviceCert.pem', cert)
         self._create(2, 'deviceCert.key', key)
+
+    def verify_all(self, root_ca, cert, key):
+        self._verify(0, 'root-CA.pem', root_ca)
+        self._verify(1, 'deviceCert.pem', cert)
+        self._verify(2, 'deviceCert.key', key)
 
     def disable_auto_attach(self):
         cmd = 'AT+COPS=2\r'

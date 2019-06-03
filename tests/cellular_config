@@ -15,6 +15,7 @@ parser.add_argument('--root_ca', type=argparse.FileType('r'), required=True)
 parser.add_argument('--cert', type=argparse.FileType('r'), required=True)
 parser.add_argument('--key', type=argparse.FileType('r'), required=True)
 parser.add_argument('--debug', action='store_true', required=False)
+parser.add_argument('--verify', action='store_true', required=False)
 args = parser.parse_args()
 
 try:
@@ -41,11 +42,17 @@ try:
     dev_cert = crypto.load_certificate(crypto.FILETYPE_PEM, args.cert.read())
     dev_key = crypto.load_privatekey(crypto.FILETYPE_PEM, args.key.read())
     
-    cfg.delete_all()
-    cfg.create_all(root_ca=crypto.dump_certificate(crypto.FILETYPE_ASN1, root_ca),
-                   cert=crypto.dump_certificate(crypto.FILETYPE_ASN1, dev_cert),
-                   key=crypto.dump_privatekey(crypto.FILETYPE_ASN1, dev_key))
-    cfg.disable_auto_attach()
+    if args.verify:
+        # Do not modify files on the board, just verify they have the same md5sum
+        cfg.verify_all(root_ca=crypto.dump_certificate(crypto.FILETYPE_ASN1, root_ca),
+                       cert=crypto.dump_certificate(crypto.FILETYPE_ASN1, dev_cert),
+                       key=crypto.dump_privatekey(crypto.FILETYPE_ASN1, dev_key))
+    else:
+        cfg.delete_all()
+        cfg.create_all(root_ca=crypto.dump_certificate(crypto.FILETYPE_ASN1, root_ca),
+                       cert=crypto.dump_certificate(crypto.FILETYPE_ASN1, dev_cert),
+                       key=crypto.dump_privatekey(crypto.FILETYPE_ASN1, dev_key))
+        cfg.disable_auto_attach()
     
     if bridged_backend:
         interface.ConfigInterface(bridged_backend).cellular_config(False)
