@@ -61,6 +61,7 @@ class CellularBridgedBackend(object):
         
     def read_until(self, length=512, expected='\r\n', timeout=_timeout):
         data = b''
+        t_start = time.time()
         while True:
             cmd = message.ConfigMessage_CELLULAR_READ_REQ(length=length)
             resp = self._backend.command_response(cmd, timeout)
@@ -73,7 +74,8 @@ class CellularBridgedBackend(object):
                 data = data + new_data
                 if expected in data:
                     return data
-            else:
+                t_start = time.time()
+            elif (time.time() - t_start) >= timeout:
                 return b''
 
     def read(self, length=512, timeout=_timeout):
