@@ -60,6 +60,7 @@ class CellularBridgedBackend(object):
             pass
         
     def read_until(self, length=512, expected='\r\n', timeout=_timeout):
+        data = b''
         while True:
             cmd = message.ConfigMessage_CELLULAR_READ_REQ(length=length)
             resp = self._backend.command_response(cmd, timeout)
@@ -67,8 +68,9 @@ class CellularBridgedBackend(object):
                 logger.error('Bad response to CELLULAR_READ_REQ')
                 raise ExceptionCellularCommsError
             if (resp.length > 0):
-                data = self._backend.read(resp.length, timeout)
-                data = "".join(map(chr, data))
+                new_data = self._backend.read(resp.length, timeout)
+                new_data = ''.join(map(chr, new_data))
+                data = data + new_data
                 if expected in data:
                     return data
             else:
@@ -105,7 +107,6 @@ class CellularConfig(object):
         self._disable_local_echo()
 
     def _expect(self, expected, timeout=_timeout):
-        time.sleep(0.1)
         resp = self._backend.read_until(expected=expected, timeout=timeout)
         logger.debug('read: %s exp: %s', resp.strip(), expected)
         if resp:
@@ -151,7 +152,6 @@ class CellularConfig(object):
         self._backend.write(cmd)
         self._expect('>')
         self._backend.write(data)
-        time.sleep(0.5)
         md5sum = hashlib.md5(data).hexdigest()
         self._expect('+USECMNG: 0,%u,"%s","%s"\r\n\r\nOK' % (index, name, md5sum))
         logger.info('%s added successfully', name)
@@ -161,7 +161,6 @@ class CellularConfig(object):
         logger.debug('send: %s', cmd.strip())
         self._flush()
         self._backend.write(cmd)
-        time.sleep(0.5)
         md5sum = hashlib.md5(data).hexdigest()
         self._expect('+USECMNG: 4,%u,"%s","%s"\r\n\r\nOK' % (index, name, md5sum))
         logger.info('%s verified successfully', name)
