@@ -2,6 +2,8 @@ import struct
 import logging
 import inspect
 import sys
+import binascii
+
 
 logger = logging.getLogger(__name__)
 
@@ -281,7 +283,7 @@ class ConfigMessage_STATUS_RESP(ConfigMessage):
     name = 'STATUS_RESP'
 
     def __init__(self, **kwargs):
-        ConfigMessage.__init__(self, b'BIIIQ???16s?',
+        ConfigMessage.__init__(self, b'BIIIQ???15sx?',
                                ['error_code', 'fw_version',
                                 'reserved', 'cfg_version',
                                 'unique_device_identifier',
@@ -292,12 +294,21 @@ class ConfigMessage_STATUS_RESP(ConfigMessage):
                                 'satellite_module_detected'
                                 ], **kwargs)
 
+    def pack(self):
+        old_id = self.unique_device_identifier[:]
+        if len(old_id) > 16:
+            raise ExceptionMessageInvalidValue('unique_device_identifier should not exceed 16 bytes in length')
+        self.unique_device_identifier = int(old_id, 16)
+        data = ConfigMessage.pack(self)
+        self.unique_device_identifier = old_id
+        return data
+
     def unpack(self, data):
         ConfigMessage.unpack(self, data)
-        self.reserved = ""
         if not self.cellular_module_detected:
             self.sim_card_imsi = "N/A"
             self.sim_card_present = "N/A"
+        self.unique_device_identifier = binascii.hexlify(struct.pack('>Q', self.unique_device_identifier))
 
 
 class ConfigMessage_FW_SEND_IMAGE_REQ(ConfigMessage):
