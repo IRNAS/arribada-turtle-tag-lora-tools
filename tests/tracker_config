@@ -1,6 +1,7 @@
 #!/usr/bin/python2.7
 
 import argparse
+import traceback
 import logging
 import sys
 import json
@@ -35,7 +36,7 @@ comms_backend = None
 
 if not any(vars(args).values()):
     parser.print_help()
-    sys.exit()
+    sys.exit(2)
 
 if args.version:
     print 'Version:', __version__
@@ -109,7 +110,11 @@ try:
     if args.read_flash:
         args.read_flash.write(cfg.read_flash_file())
 except:
-    print "Unexpected error: %s" % str(sys.exc_info())
-
-if comms_backend:
-    comms_backend.cleanup()
+    if args.debug:
+        traceback.print_exc()
+    else:
+        print "Unexpected error: %s" % str(sys.exc_info())
+    sys.exit(1)
+finally:
+    if comms_backend:
+        comms_backend.cleanup()

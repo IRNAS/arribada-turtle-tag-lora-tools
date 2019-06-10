@@ -2,6 +2,7 @@
 
 from OpenSSL import crypto
 import argparse
+import traceback
 import logging
 import sys
 import json
@@ -46,14 +47,11 @@ parser.add_argument('--firmware_update', type=str, required=False)
 parser.add_argument('--firmware_version', type=int, required=False)
 parser.add_argument('--configuration_update', type=str, required=False)
 parser.add_argument('--file', type=argparse.FileType(mode='r'), required=False)
-
-
 args = parser.parse_args()
-
 
 if not any(vars(args).values()):
     parser.print_help()
-    sys.exit()
+    sys.exit(2)
 
 if args.version:
     print 'Version:', __version__
@@ -129,216 +127,224 @@ def delete_shadow(thing_name):
     conn.request('DELETE', '/things/%s/shadow' % thing_name)
     print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
 
+try:
 
-if args.install:
-    logger.info('Generating root CA certificate for %s...', args.namespace)
-    root_ca = aws.generate_root_cert(args.namespace)
-    logger.info('Installing %s onto AWS...', args.namespace)
-    try:
-        cid = aws.install(root_ca)
-    except:
-        logger.error('Installation error...trying to clean up')
-        aws.uninstall()
-        raise
-
-    logger.info('Saving certificate and keys for %s...', args.namespace)
-    save_crypto(args.namespace, root_ca)
-    logger.info('Saving unique certificate ID %s from AWS for %s...', cid, args.namespace)
-    save_cid(args.namespace, cid)
-
-if args.upgrade:
-    logger.info('Upgrading %s on AWS...', args.namespace)
-    aws.upgrade()
-
-if args.uninstall:
-    logger.info('Uninstalling everything from AWS for %s...', args.namespace)
-    aws.uninstall()
-
-if args.register_thing:
-    logger.info('Creating certificate and keys for %s', args.register_thing)
-    root_ca = load_crypto(args.namespace)
-    logger.info('Registering %s into AWS', args.register_thing)
-    cert_key = aws.register_new_thing(root_ca, args.register_thing)
-    logger.info('Saving certificate and key files for %s', args.register_thing)
-    save_crypto(args.register_thing, cert_key)
-    logger.info('Creating default device shadow %s', args.register_thing)
-    retries = 3
-    while True:
+    if args.install:
+        logger.info('Generating root CA certificate for %s...', args.namespace)
+        root_ca = aws.generate_root_cert(args.namespace)
+        logger.info('Installing %s onto AWS...', args.namespace)
         try:
-            create_shadow(args.register_thing)
-            break
-        except Exception as e:
-            if retries == 0:
-                raise e
-            else:
-                retries = retries - 1
-                time.sleep(0.5)
+            cid = aws.install(root_ca)
+        except:
+            logger.error('Installation error...trying to clean up')
+            aws.uninstall()
+            raise
+    
+        logger.info('Saving certificate and keys for %s...', args.namespace)
+        save_crypto(args.namespace, root_ca)
+        logger.info('Saving unique certificate ID %s from AWS for %s...', cid, args.namespace)
+        save_cid(args.namespace, cid)
+    
+    if args.upgrade:
+        logger.info('Upgrading %s on AWS...', args.namespace)
+        aws.upgrade()
+    
+    if args.uninstall:
+        logger.info('Uninstalling everything from AWS for %s...', args.namespace)
+        aws.uninstall()
+    
+    if args.register_thing:
+        logger.info('Creating certificate and keys for %s', args.register_thing)
+        root_ca = load_crypto(args.namespace)
+        logger.info('Registering %s into AWS', args.register_thing)
+        cert_key = aws.register_new_thing(root_ca, args.register_thing)
+        logger.info('Saving certificate and key files for %s', args.register_thing)
+        save_crypto(args.register_thing, cert_key)
+        logger.info('Creating default device shadow %s', args.register_thing)
+        retries = 3
+        while True:
+            try:
+                create_shadow(args.register_thing)
+                break
+            except Exception as e:
+                if retries == 0:
+                    raise e
+                else:
+                    retries = retries - 1
+                    time.sleep(0.5)
+    
+    if args.unregister_thing:
+        logger.info('Deleting device shadow %s', args.unregister_thing)
+        delete_shadow(args.unregister_thing)
+        logger.info('Deleting thing %s from AWS', args.unregister_thing)
+        aws.delete_iot_thing(args.unregister_thing)
+    
+    if args.list_things:
+        things = aws.list_iot_registered_things()
+        if things:
+            print things
+        else:
+            print 'No things are registered'
+    
+    if args.data:
+        if args.data[0] == '@':
+            with open(args.data[1:], 'rb') as fd:
+                args.data = fd.read()
+    
+    if args.get_iot_endpoint:
+        print aws.get_iot_endpoint_address()
+    
+    if args.set_shadow and args.data:
+        conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                       key_file='%s/%s.key' % (args.cert_path, args.set_shadow),
+                                       cert_file='%s/%s.cert' % (args.cert_path, args.set_shadow))
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        conn.request('POST', '/things/%s/shadow' % args.set_shadow, args.data, headers)
+        print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
+    
+    if args.delete_shadow:
+        logger.info('Deleting device shadow for %s', args.delete_shadow)
+        delete_shadow(args.delete_shadow)
+    
+    if args.create_shadow:
+        logger.info('Creating device shadow for %s', args.create_shadow)
+        create_shadow(args.create_shadow)
+    
+    if args.get_shadow:
+        conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                       key_file='%s/%s.key' % (args.cert_path, args.get_shadow),
+                                       cert_file='%s/%s.cert' % (args.cert_path, args.get_shadow))
+        conn.request('GET', '/things/%s/shadow' % args.get_shadow)
+        print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
+    
+    if args.update_status and args.data:
+        status = json.loads(args.data)
+        req = { "state": { "desired": { "device_status": status } } }
+        conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                       key_file='%s/%s.key' % (args.cert_path, args.update_status),
+                                       cert_file='%s/%s.cert' % (args.cert_path, args.update_status))
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        conn.request('POST', '/things/%s/shadow' % args.update_status, json.dumps(req), headers)
+        print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
+    
+    if args.send_logging and args.file:
+        conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                       key_file='%s/%s.key' % (args.cert_path, args.send_logging),
+                                       cert_file='%s/%s.cert' % (args.cert_path, args.send_logging))
+        headers = {'Content-type': 'application/octet-stream', 'Accept': 'text/plain'}
+        conn.request('POST', '/topics/%s/logging' % args.send_logging, args.file.read(), headers)
+        print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
+    
+    if args.list_datasets:
+        print aws.list_iot_datasets()
+    
+    if args.download_dataset:
+        logger.info('Retrieving data set meta data for %s', args.download_dataset)
+        uri_list = aws.get_iot_dataset_contents(args.download_dataset)
+        for uri in uri_list:
+            (base, _) = uri.split('?')
+            k = base.split('/')
+            logger.info('Downloading data set to file %s...', k[4])
+            os.system('wget --quiet --no-check-certificate "%s" -O %s' % (uri, k[4]))
+    
+    if args.update_dataset:
+        logger.info('Requesting data set update for %s', args.update_dataset)
+        resp = aws.update_iot_dataset(args.update_dataset)
+        print json.dumps(resp, sort_keys=True, indent=4)
+    
+    if args.firmware_update and args.file and args.firmware_version is not None:
+    
+        # Firmware update is a DFU zip file
+        zf = zipfile.ZipFile(args.file, mode='r')
+        files = zf.namelist()
+    
+        # Try to find a legitimate firmware file
+        fw_file = None
+        for i in files:
+            if '_xxaa.bin' in i:
+                fw_file = i
+                logger.info('Using firmware file %s from DFU zip archive', fw_file)
+                break
+        if not fw_file:
+            logger.error('Could not find a valid firmware image file in ZIP archive')
+            sys.exit()
+    
+        # Extract firmware file data
+        data = zf.read(fw_file)
+    
+        # Generate new S3 object and get pre-signed URL
+        logger.info('Uploading firmware file %s to AWS...', fw_file)
+        url = aws.create_s3_object_and_get_presigned_url(io.BytesIO(data))
+    
+        # Split URL fields
+        port = HTTPS_PORT
+        (_, _, domain, path) = url.split('/')
+        path = '/' + path
+    
+        # Generate firmware update device shadow record
+        logger.info('Notifying device shadow update for %s...', args.firmware_update)
+        update = { 'firmware_update': { 'url': { 'domain': domain, 'port': port, 'path': path },
+                                        'version': args.firmware_version } }
+        req = { "state": { "desired": { "device_update": update } } }
+    
+        # TODO: we may wish to send the same update to many devices
+        conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                       key_file='%s/%s.key' % (args.cert_path, args.firmware_update),
+                                       cert_file='%s/%s.cert' % (args.cert_path, args.firmware_update))
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        conn.request('POST', '/things/%s/shadow' % args.firmware_update, json.dumps(req), headers)
+        print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
+    
+    
+    if args.configuration_update and args.file:
+    
+        json_data = args.file.read()
+        json_dict = json.loads(json_data)
+    
+        # Ensure version is inside the JSON record
+        if 'version' not in json_dict:
+            logger.error('Unable to process configuration file without version')
+            sys.exit()
+    
+        # Extract configuration version
+        config_version = json_dict['version']
+    
+        # Convert to configuration update binary stream
+        config_objs = config.json_loads(json_data)
+        config_data = config.encode_all(config_objs)
+    
+        data = b''
+        data = data + message.ConfigMessage_CFG_ERASE_REQ(cfg_tag=0xFFFF).pack()
+        data = data + message.ConfigMessage_CFG_WRITE_REQ(length=len(config_data)).pack()
+        data = data + config_data
+        data = data + message.ConfigMessage_CFG_SAVE_REQ().pack()
+    
+        # Generate new S3 object and get pre-signed URL
+        logger.info('Uploading configuration data length %s to AWS...', len(config_data))
+        url = aws.create_s3_object_and_get_presigned_url(io.BytesIO(data))
+    
+        # Split URL fields
+        port = HTTPS_PORT
+        (_, _, domain, path) = url.split('/')
+        path = '/' + path
+    
+        # Generate firmware update device shadow record
+        logger.info('Notifying device shadow update for %s...', args.configuration_update)
+        update = { 'configuration_update': { 'url': { 'domain': domain, 'port': port, 'path': path },
+                                             'version': config_version } }
+        req = { "state": { "desired": { "device_update": update } } }
+    
+        # TODO: we may wish to send the same update to many devices
+        conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
+                                       key_file='%s/%s.key' % (args.cert_path, args.configuration_update),
+                                       cert_file='%s/%s.cert' % (args.cert_path, args.configuration_update))
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+        conn.request('POST', '/things/%s/shadow' % args.configuration_update, json.dumps(req), headers)
+        print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
 
-if args.unregister_thing:
-    logger.info('Deleting device shadow %s', args.unregister_thing)
-    delete_shadow(args.unregister_thing)
-    logger.info('Deleting thing %s from AWS', args.unregister_thing)
-    aws.delete_iot_thing(args.unregister_thing)
-
-if args.list_things:
-    things = aws.list_iot_registered_things()
-    if things:
-        print things
+except:
+    if args.debug:
+        traceback.print_exc()
     else:
-        print 'No things are registered'
-
-if args.data:
-    if args.data[0] == '@':
-        with open(args.data[1:], 'rb') as fd:
-            args.data = fd.read()
-
-if args.get_iot_endpoint:
-    print aws.get_iot_endpoint_address()
-
-if args.set_shadow and args.data:
-    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
-                                   key_file='%s/%s.key' % (args.cert_path, args.set_shadow),
-                                   cert_file='%s/%s.cert' % (args.cert_path, args.set_shadow))
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    conn.request('POST', '/things/%s/shadow' % args.set_shadow, args.data, headers)
-    print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
-
-if args.delete_shadow:
-    logger.info('Deleting device shadow for %s', args.delete_shadow)
-    delete_shadow(args.delete_shadow)
-
-if args.create_shadow:
-    logger.info('Creating device shadow for %s', args.create_shadow)
-    create_shadow(args.create_shadow)
-
-if args.get_shadow:
-    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
-                                   key_file='%s/%s.key' % (args.cert_path, args.get_shadow),
-                                   cert_file='%s/%s.cert' % (args.cert_path, args.get_shadow))
-    conn.request('GET', '/things/%s/shadow' % args.get_shadow)
-    print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
-
-if args.update_status and args.data:
-    status = json.loads(args.data)
-    req = { "state": { "desired": { "device_status": status } } }
-    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
-                                   key_file='%s/%s.key' % (args.cert_path, args.update_status),
-                                   cert_file='%s/%s.cert' % (args.cert_path, args.update_status))
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    conn.request('POST', '/things/%s/shadow' % args.update_status, json.dumps(req), headers)
-    print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
-
-if args.send_logging and args.file:
-    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
-                                   key_file='%s/%s.key' % (args.cert_path, args.send_logging),
-                                   cert_file='%s/%s.cert' % (args.cert_path, args.send_logging))
-    headers = {'Content-type': 'application/octet-stream', 'Accept': 'text/plain'}
-    conn.request('POST', '/topics/%s/logging' % args.send_logging, args.file.read(), headers)
-    print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
-
-if args.list_datasets:
-    print aws.list_iot_datasets()
-
-if args.download_dataset:
-    logger.info('Retrieving data set meta data for %s', args.download_dataset)
-    uri_list = aws.get_iot_dataset_contents(args.download_dataset)
-    for uri in uri_list:
-        (base, _) = uri.split('?')
-        k = base.split('/')
-        logger.info('Downloading data set to file %s...', k[4])
-        os.system('wget --quiet --no-check-certificate "%s" -O %s' % (uri, k[4]))
-
-if args.update_dataset:
-    logger.info('Requesting data set update for %s', args.update_dataset)
-    resp = aws.update_iot_dataset(args.update_dataset)
-    print json.dumps(resp, sort_keys=True, indent=4)
-
-if args.firmware_update and args.file and args.firmware_version is not None:
-
-    # Firmware update is a DFU zip file
-    zf = zipfile.ZipFile(args.file, mode='r')
-    files = zf.namelist()
-
-    # Try to find a legitimate firmware file
-    fw_file = None
-    for i in files:
-        if '_xxaa.bin' in i:
-            fw_file = i
-            logger.info('Using firmware file %s from DFU zip archive', fw_file)
-            break
-    if not fw_file:
-        logger.error('Could not find a valid firmware image file in ZIP archive')
-        sys.exit()
-
-    # Extract firmware file data
-    data = zf.read(fw_file)
-
-    # Generate new S3 object and get pre-signed URL
-    logger.info('Uploading firmware file %s to AWS...', fw_file)
-    url = aws.create_s3_object_and_get_presigned_url(io.BytesIO(data))
-
-    # Split URL fields
-    port = HTTPS_PORT
-    (_, _, domain, path) = url.split('/')
-    path = '/' + path
-
-    # Generate firmware update device shadow record
-    logger.info('Notifying device shadow update for %s...', args.firmware_update)
-    update = { 'firmware_update': { 'url': { 'domain': domain, 'port': port, 'path': path },
-                                    'version': args.firmware_version } }
-    req = { "state": { "desired": { "device_update": update } } }
-
-    # TODO: we may wish to send the same update to many devices
-    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
-                                   key_file='%s/%s.key' % (args.cert_path, args.firmware_update),
-                                   cert_file='%s/%s.cert' % (args.cert_path, args.firmware_update))
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    conn.request('POST', '/things/%s/shadow' % args.firmware_update, json.dumps(req), headers)
-    print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
-
-
-if args.configuration_update and args.file:
-
-    json_data = args.file.read()
-    json_dict = json.loads(json_data)
-
-    # Ensure version is inside the JSON record
-    if 'version' not in json_dict:
-        logger.error('Unable to process configuration file without version')
-        sys.exit()
-
-    # Extract configuration version
-    config_version = json_dict['version']
-
-    # Convert to configuration update binary stream
-    config_objs = config.json_loads(json_data)
-    config_data = config.encode_all(config_objs)
-
-    data = b''
-    data = data + message.ConfigMessage_CFG_ERASE_REQ(cfg_tag=0xFFFF).pack()
-    data = data + message.ConfigMessage_CFG_WRITE_REQ(length=len(config_data)).pack()
-    data = data + config_data
-    data = data + message.ConfigMessage_CFG_SAVE_REQ().pack()
-
-    # Generate new S3 object and get pre-signed URL
-    logger.info('Uploading configuration data length %s to AWS...', len(config_data))
-    url = aws.create_s3_object_and_get_presigned_url(io.BytesIO(data))
-
-    # Split URL fields
-    port = HTTPS_PORT
-    (_, _, domain, path) = url.split('/')
-    path = '/' + path
-
-    # Generate firmware update device shadow record
-    logger.info('Notifying device shadow update for %s...', args.configuration_update)
-    update = { 'configuration_update': { 'url': { 'domain': domain, 'port': port, 'path': path },
-                                         'version': config_version } }
-    req = { "state": { "desired": { "device_update": update } } }
-
-    # TODO: we may wish to send the same update to many devices
-    conn = httpcli.HTTPSConnection(aws.get_iot_endpoint_address(), port=AWS_HTTPS_PORT,
-                                   key_file='%s/%s.key' % (args.cert_path, args.configuration_update),
-                                   cert_file='%s/%s.cert' % (args.cert_path, args.configuration_update))
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    conn.request('POST', '/things/%s/shadow' % args.configuration_update, json.dumps(req), headers)
-    print json.dumps(json.loads(conn.getresponse().read()), sort_keys=True, indent=4)
+        print "Unexpected error: %s" % str(sys.exc_info())
+    sys.exit(1)
