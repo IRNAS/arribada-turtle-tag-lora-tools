@@ -51,6 +51,8 @@ def decode_all(data):
             offset += cfg.length
         else:
             break
+    if offset != len(data):
+        sys.stderr.write('Log file corruption detected at byte ' + str(offset) + '\n')
     return objects
 
 
