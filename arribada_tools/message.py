@@ -431,7 +431,7 @@ class ConfigMessage_BATTERY_STATUS_RESP(ConfigMessage):
     name = 'BATTERY_STATUS_RESP'
 
     def __init__(self, **kwargs):
-        ConfigMessage.__init__(self, b'B?B', ['error_code', 'charging_ind', 'charging_level'], **kwargs)
+        ConfigMessage.__init__(self, b'B?BH', ['error_code', 'charging_ind', 'charging_level', 'millivolts'], **kwargs)
 
 
 class ConfigMessage_LOG_CREATE_REQ(ConfigMessage):
