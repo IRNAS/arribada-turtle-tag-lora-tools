@@ -65,7 +65,6 @@ else:
 
 ## Set namespace dependent parameters
 aws.S3_BUCKET = args.namespace
-aws.IOT_POLICY = args.namespace
 aws.IOT_GROUP = args.namespace
 if args.region: aws.REGION = args.region
 
@@ -174,8 +173,6 @@ try:
                     time.sleep(0.5)
     
     if args.unregister_thing:
-        logger.info('Deleting device shadow %s', args.unregister_thing)
-        delete_shadow(args.unregister_thing)
         logger.info('Deleting thing %s from AWS', args.unregister_thing)
         aws.delete_iot_thing(args.unregister_thing)
     
