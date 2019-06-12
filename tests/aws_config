@@ -9,6 +9,7 @@ import json
 import os
 import zipfile
 import io
+import re
 import time
 from arribada_tools import config, message, aws, __version__
 try:
@@ -62,6 +63,13 @@ if args.debug:
 else:
     logging.basicConfig(format='%(asctime)s\t%(module)s\t%(levelname)s\t%(message)s', level=logging.INFO)
 
+if args.namespace:
+    if not 3 <= len(args.namespace) <= 63:
+        print 'Namespace must be between 3 and 63 characters'
+        sys.exit(1)
+    if re.search(r"^[^a-z0-9]|[A-Z_]", args.namespace):
+        print 'Namespace must comprise of lowercase characters and numbers only'
+        sys.exit(1)
 
 ## Set namespace dependent parameters
 aws.S3_BUCKET = args.namespace
@@ -154,6 +162,12 @@ try:
         aws.uninstall()
     
     if args.register_thing:
+        if len(args.register_thing) > 128:
+            print 'Thingname must be under 128 characters'
+            sys.exit(1)
+        if re.match(r"[^a-zA-Z0-9:_-]+", args.register_thing):
+            print 'Thingname may only contain letters, numbers and : _ -'
+            sys.exit(1)
         logger.info('Creating certificate and keys for %s', args.register_thing)
         root_ca = load_crypto(args.namespace)
         logger.info('Registering %s into AWS', args.register_thing)
