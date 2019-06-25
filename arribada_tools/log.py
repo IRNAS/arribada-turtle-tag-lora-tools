@@ -439,7 +439,7 @@ class LogItem_IOT_FirmwareUpdate(LogItem):
 class LogItem_IOT_ErrorCode(LogItem):
     tag = 0x23
     name = 'IOTErrorCode'
-    fields = [ 'error_code' ]
+    fields = [ 'iot_error_code', 'hal_error_code', 'hal_line_number', 'vendor_error_code']
 
     def __init__(self, **kwargs):
-        LogItem.__init__(self, b'h', self.fields, **kwargs)
+        LogItem.__init__(self, b'hhHH', self.fields, **kwargs)
