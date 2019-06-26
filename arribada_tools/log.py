@@ -16,12 +16,14 @@ def decode(data, offset):
     A tuple is returned containing an instance of the log object plus
     the input data buffer, less the amount of data consumed."""
     item = TaggedItem()
+    for i in range(item.header_length):
+         sys.stderr.write(str(ord(str(data[offset:offset + item.header_length]))) +  '\n')
+
     if ((len(data) + offset) < item.header_length):
         return None
 
     # Unpack header tag at current position
     item.unpack(data[offset:offset + item.header_length])
-
     # Find the correct configuration class based on the configuration tag
     cfg = None
     for i in inspect.getmembers(sys.modules[__name__], inspect.isclass):
@@ -443,3 +445,21 @@ class LogItem_IOT_ErrorCode(LogItem):
 
     def __init__(self, **kwargs):
         LogItem.__init__(self, b'hhHH', self.fields, **kwargs)
+
+class LogItem_IOT_networkInfo(LogItem):
+    tag = 0x24
+    name = 'IOTNetworkInfo'
+    fields = [ 'signal_power', 'quality', 'technology', 'network_operator', 'location_area_code', 'cell_id']
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'BBB25s5s9s', self.fields, **kwargs)
+
+    def unpack(self, data):
+        LogItem.unpack(self, data)
+        self.network_operator = self.network_operator.split('\0')[0]
+        self.location_area_code = self.location_area_code.split('\0')[0]
+        self.cell_id = self.cell_id.split('\0')[0]
+        if self.technology == 0:
+            self.technology = '2G'
+        if self.technology == 2:
+            self.technology = '3G'
