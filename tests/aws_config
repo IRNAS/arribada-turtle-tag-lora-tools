@@ -275,7 +275,7 @@ try:
         # Try to find a legitimate firmware file
         fw_file = None
         for i in files:
-            if '_xxaa.bin' in i:
+            if '.bin' in i:
                 fw_file = i
                 logger.info('Using firmware file %s from DFU zip archive', fw_file)
                 break
