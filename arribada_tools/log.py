@@ -16,8 +16,6 @@ def decode(data, offset):
     A tuple is returned containing an instance of the log object plus
     the input data buffer, less the amount of data consumed."""
     item = TaggedItem()
-    for i in range(item.header_length):
-         sys.stderr.write(str(ord(str(data[offset:offset + item.header_length]))) +  '\n')
 
     if ((len(data) + offset) < item.header_length):
         return None
