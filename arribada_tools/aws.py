@@ -31,12 +31,38 @@ IOT_POLICY = 'arribada'
 # Any thing registered onto the account
 IOT_POLICY_DOCUMENT = """{
   "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Action": "iot:*",
-    "Resource": "*"
-  }
-]}"""
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:Connect"
+      ],
+      "Resource": [
+        "*"
+      ],
+      "Condition": {
+        "Bool": {
+          "iot:Connection.Thing.IsAttached": [
+            "true"
+          ]
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iot:Publish",
+      "Resource": "arn:aws:iot:region:account:topic/thingName/logging"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:GetThingShadow",
+        "iot:UpdateThingShadow",
+        "iot:DeleteThingShadow"
+      ],
+      "Resource": "arn:aws:iot:region:account:thing/thingName"
+    }]
+}"""
 
 # !!! Don't change these without checking the AWS SAM module code won't break since these
 # names are also hardcoded into the SAM code !!!
@@ -387,6 +413,12 @@ def delete_iam_roles():
 
 
 def delete_iot_thing(thing_name):
+    try:
+        cli = boto3.client('iot-data')
+        cli.delete_thing_shadow(thingName=thing_name)
+    except:
+        # Shadow may already be deleted, so ignore error
+        pass
     cli = boto3.client('iot')
     principals = cli.list_thing_principals(thingName=thing_name)
     for p in principals['principals']:
@@ -403,10 +435,7 @@ def delete_iot_things():
         return
     things = cli.list_things_in_thing_group(thingGroupName=IOT_GROUP)
     for i in things['things']:
-        principals = cli.list_thing_principals(thingName=i)
-        for p in principals['principals']:
-            cli.detach_thing_principal(thingName=i, principal=p)
-        cli.delete_thing(thingName=i)
+        delete_iot_thing(i)
 
 
 def delete_iot_thing_group():
@@ -430,9 +459,11 @@ def delete_iot_thing_group():
 def delete_iot_policies():
     cli = boto3.client('iot')
     policies = cli.list_policies()
-    if IOT_POLICY not in [ i['policyName'] for i in policies['policies'] ]:
-        return
-    cli.delete_policy(policyName=IOT_POLICY)
+    for policy in [ i['policyName'] for i in policies['policies'] ]:
+        targets = cli.list_targets_for_policy(policyName=policy)
+        for t in targets['principals']:
+            cli.detach_policy(policyName=policy, target=t)
+        cli.delete_policy(policyName=policy)
 
 
 def delete_iot_certificates_by_ca(ca_cert_id):
@@ -441,11 +472,8 @@ def delete_iot_certificates_by_ca(ca_cert_id):
     if ca_cert_id not in [ i['certificateId'] for i in ca_certs['certificates'] ]:
         return
     certs = cli.list_certificates_by_ca(caCertificateId=ca_cert_id)
-    policy_arn = lookup_iot_policy_arn_by_name(IOT_POLICY)
     for i in certs['certificates']:
         cli.update_certificate(certificateId=i['certificateId'], newStatus='INACTIVE')
-        if policy_arn:
-            cli.detach_policy(policyName=IOT_POLICY, target=i['certificateArn'])
         cli.delete_certificate(certificateId=i['certificateId'])
 
 
@@ -463,13 +491,24 @@ def get_iot_ca_certificates():
     ca_certs = cli.list_ca_certificates()
     return [ i['certificateId'] for i in ca_certs['certificates'] ]
 
-def create_iot_policy():
+
+def get_iot_account_number():
+    cli = boto3.client('sts')
+    return cli.get_caller_identity()['Account']
+
+
+def create_iot_policy(policy_name):
     cli = boto3.client('iot')
     policies = cli.list_policies()
-    if IOT_POLICY in [ i['policyName'] for i in policies['policies'] ]:
+    if policy_name in [ i['policyName'] for i in policies['policies'] ]:
+        logger.warn('Policy %s already exists', policy_name)
         return
-    cli.create_policy(policyName=IOT_POLICY,
-                      policyDocument=IOT_POLICY_DOCUMENT)
+    policy_doc = IOT_POLICY_DOCUMENT[:]
+    policy_doc = policy_doc.replace('thingName', policy_name)
+    policy_doc = policy_doc.replace('region', REGION)
+    policy_doc = policy_doc.replace('account', get_iot_account_number())
+    cli.create_policy(policyName=policy_name,
+                      policyDocument=policy_doc)
 
 
 def create_iot_thing_group():
@@ -579,12 +618,15 @@ def register_new_thing(root_ca, thing_name):
     resp = cli.register_certificate(certificatePem=crypto.dump_certificate(crypto.FILETYPE_PEM, cert[0]),
                                     setAsActive=True)
 
+    # Create new policy for this thing
+    create_iot_policy(thing_name)
+
     # Attach policy to certificate
-    policy_arn = lookup_iot_policy_arn_by_name(IOT_POLICY)
+    policy_arn = lookup_iot_policy_arn_by_name(thing_name)
     if policy_arn:
-        cli.attach_policy(policyName=IOT_POLICY, target=resp['certificateArn'])
+        cli.attach_policy(policyName=thing_name, target=resp['certificateArn'])
     else:
-        logger.warn('Policy %s does not exist, so could not attach policy to certificate', IOT_POLICY)
+        logger.warn('Policy %s does not exist, so could not attach policy to certificate', thing_name)
 
     cli.create_thing(thingName=thing_name)
     group_arn = lookup_iot_group_arn_by_name(IOT_GROUP)
@@ -648,8 +690,6 @@ def install(root_ca):
     validate_name(IOT_POLICY)
     logging.info('register_root_ca')
     certificate_id = register_root_ca(root_ca)
-    logging.info('create_iot_policy')
-    create_iot_policy()
     logging.info('create_iot_thing_group')
     create_iot_thing_group()
     logging.info('create_s3')
@@ -682,10 +722,10 @@ def uninstall():
     delete_s3()
     delete_iot_things()
     delete_iot_thing_group()
+    logging.info('delete_iot_policies')
+    delete_iot_policies()
     for certificate_id in get_iot_ca_certificates():
         logging.info('delete_iot_certificates_by_ca(%s)', certificate_id)
         delete_iot_certificates_by_ca(certificate_id)
         logging.info('delete_iot_ca_certificate(%s)', certificate_id)
         delete_iot_ca_certificate(certificate_id)
-    logging.info('delete_iot_policies')
-    delete_iot_policies()
