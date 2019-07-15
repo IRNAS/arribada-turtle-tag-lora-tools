@@ -7,6 +7,7 @@ import binascii
 import datetime
 import dateutil.parser
 
+
 __version__ = 5
 
 logger = logging.getLogger(__name__)
@@ -1204,6 +1205,130 @@ class ConfigItem_IOT_Cellular_APN(ConfigItem):
         self.name = self.name.rstrip('\x00')
         self.username = self.username.rstrip('\x00')
         self.password = self.password.rstrip('\x00')
+
+
+class ConfigItem_IOT_Satellite(ConfigItem):
+    tag = 0x0A10
+    path = 'iot.satellite'
+    params = ['enable', 'connectionPriority', 'statusFilter', 'minUpdates',
+              'maxInterval', 'minInterval', 'randomizedTxWindow']
+    json_params = params
+
+    # The order of these allowed filter options must match the bit-field order as
+    # implemented by the embedded software
+    allowed_status_filter = ['LAST_LOG_READ_POS', 'LAST_GPS_LOCATION', 'BATTERY_LEVEL',
+                             'BATTERY_VOLTAGE', 'LAST_CELLULAR_CONNECT', 'LAST_SAT_TX',
+                             'NEXT_SAT_TX', 'CONFIG_VERSION', 'FW_VERSION']
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'?BIBIIB', self.params, **kwargs)
+        if not hasattr(self, 'enable'):
+            self.enable = True
+        if not hasattr(self, 'connectionPriority'):
+            self.connectionPriority = 0
+        if not hasattr(self, 'minUpdates'):
+            self.minUpdates = 1
+        if not hasattr(self, 'maxInterval'):
+            self.maxInterval = 0     # Means disable
+        if not hasattr(self, 'minInterval'):
+            self.minInterval = 0     # Means disable
+        if not hasattr(self, 'randomizedTxWindow'):
+            self.randomizedTxWindow = 0
+
+    def pack(self):
+        
+        if hasattr(self, 'statusFilter'):
+            statusFilter = self.statusFilter
+            self.statusFilter = 0
+            for i in statusFilter:
+                if i in self.allowed_status_filter:
+                    self.statusFilter = self.statusFilter | (1 << self.allowed_status_filter.index(i))
+                else:
+                    raise ExceptionConfigInvalidValue('statusFilter must be one of %s' % self.allowed_status_filter)
+        else:
+            raise ExceptionConfigInvalidValue('statusFilter is a mandatory parameter')
+
+        if self.minUpdates < 1:
+            raise ExceptionConfigInvalidValue('minUpdates must be >= 1')
+
+        data = ConfigItem.pack(self)
+        self.statusFilter = statusFilter
+
+        return data
+
+    def unpack(self, data):
+        ConfigItem.unpack(self, data)
+
+        statusFilter = []
+        for i in self.allowed_status_filter:
+            if self.statusFilter & (1<<self.allowed_status_filter.index(i)):
+                statusFilter.append(i)
+        self.statusFilter = statusFilter
+
+
+class ConfigItem_IOT_Satellite_Artic(ConfigItem):
+    tag = 0x0A11
+    path = 'iot.satellite.artic'
+    params = ['deviceAddress', 'bulletin']
+    json_params = params
+    allowed_bulletin_fields = ['satelliteCode', 'secondsSinceEpoch', 'params']
+    bulletin_raw = b''
+    dev_addr = b''
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'7s240s', self.params, **kwargs)
+
+    def pack(self):
+
+        if hasattr(self, 'deviceAddress'):
+            dev_addr = binascii.unhexlify(self.deviceAddress.replace(':', ''))[::-1]
+            if len(dev_addr) != 7:
+                raise ExceptionConfigInvalidValue('deviceAddress must be 7 bytes long')
+        else:
+            raise ExceptionConfigInvalidValue('deviceAddress is a mandatory parameter')
+
+        if hasattr(self, 'bulletin'):
+            if type(self.bulletin) is not list:
+                raise ExceptionConfigInvalidValue('bulletin is a mandatory parameter')
+            for i in self.bulletin:
+                if type(i) is not dict:
+                    raise ExceptionConfigInvalidValue('bulletin entry "%s" is not valid' % i)
+                sat_code = None
+                seconds_since_epoch = None
+                bulletin_params = None
+                for k in i.keys():
+                    if k is 'satelliteCode':
+                        sat_code = i[k]
+                        if len(sat_code) != 2:
+                            raise ExceptionConfigInvalidValue('bulletin entry "%s" contains invalid fields - satelliteCode must be two ASCII bytes' % i)
+                    elif k is 'secondsSinceEpoch':
+                        seconds_since_epoch = i[k]
+                    elif k is 'params':
+                        bulletin_params = i[k]
+                        if len(bulletin_params) != 6:
+                            raise ExceptionConfigInvalidValue('bulletin entry "%s" contains invalid fields - params must be 6 floats' % i)
+                    else:
+                        raise ExceptionConfigInvalidValue('bulletin entry "%s" contains invalid fields - use: %s' % (i, self.allowed_bulletin_fields))
+                if None in [sat_code, seconds_since_epoch, bulletin_params]:
+                    raise ExceptionConfigInvalidValue('bulletin entry "%s" must specify all fields: %s' % (i, self.allowed_bulletin_fields))
+                self.bulletin_raw += struct.pack(b'2sI6f', sat_code, seconds_since_epoch, *bulletin_params)
+        else:
+            raise ExceptionConfigInvalidValue('bulletin is a mandatory parameter')
+
+        bulletin = self.bulletin
+        self.bulletin = self.bulletin_raw
+        addr = self.deviceAddress
+        self.deviceAddress = dev_addr
+
+        data = ConfigItem.pack(self)
+
+        self.bulletin = bulletin
+        self.deviceAddress = addr
+
+        return data
+
+    def unpack(self, data):
+        pass
 
 
 class ConfigItem_Battery_LogEnable(ConfigItem):
