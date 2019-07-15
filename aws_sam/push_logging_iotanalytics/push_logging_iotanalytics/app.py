@@ -27,10 +27,12 @@ def lambda_handler(event, context):
 
     thing_name = event['thing_name']
     log_data = base64.b64decode(event['data'])
-    logger.debug('Got binary data length %s from %s', len(log_data), event['thing_name'])
+
+    logger.info('raw_data: %s,%s,%s', thing_name, len(log_data), event['data'])
+    logger.debug('Got binary data length of %s bytes from thing %s', len(log_data), event['thing_name'])
 
     log_entries = log.decode_all(log_data)
-    logger.debug('Got %s log entries', len(log_entries))
+    logger.debug('Decoded %s log entries', len(log_entries))
 
     iot_client = boto3.client('iotanalytics')
 
