@@ -25,6 +25,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'setuptools',
+	'PyYAML == 3.12',
         'pyusb >= 1.0.2',
         'pyserial >= 3.4',
         'bluepy >= 1.1.4;platform_system=="Linux"',
