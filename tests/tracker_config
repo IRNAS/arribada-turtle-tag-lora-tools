@@ -5,6 +5,7 @@ import traceback
 import logging
 import sys
 import json
+import datetime
 from arribada_tools import backend, interface, config, __version__
 
 parser = argparse.ArgumentParser()
@@ -26,6 +27,7 @@ parser.add_argument('--test_mode', type=lambda s: [i.strip() for i in s.split(',
 parser.add_argument('--protect', action='store_true', required=False)
 parser.add_argument('--unprotect', action='store_true', required=False)
 parser.add_argument('--setdatetime', required=False)
+parser.add_argument('--setdatetimeutc', action='store_true', required=False)
 parser.add_argument('--getdatetime', action='store_true', required=False)
 parser.add_argument('--firmware_type', required=False)
 parser.add_argument('--firmware', type=argparse.FileType('rb'), required=False)
@@ -78,8 +80,12 @@ try:
         cfg.write_json_configuration(args.write.read())
     
     if args.setdatetime:
+    	logger.warn('Please consider using --setdatetimeutc instead')
         cfg.write_json_configuration(json='{"rtc": { "dateTime": "%s"}}' % args.setdatetime, erase=False)
-    
+
+    if args.setdatetimeutc:
+        cfg.write_json_configuration(json='{"rtc": { "dateTime": "%s"}}' % str(datetime.datetime.utcnow()), erase=False)
+
     if args.getdatetime:
         print cfg.read_json_configuration(tag=config.ConfigItem_RTC_CurrentDateTime.tag)
     
