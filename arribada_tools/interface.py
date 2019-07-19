@@ -157,7 +157,7 @@ class ConfigInterface(object):
 
     def get_status(self):
         cmd = message.ConfigMessage_STATUS_REQ()
-        resp = self._backend.command_response(cmd, self.timeout)
+        resp = self._backend.command_response(cmd, 10) # Status request can take up to 10 seconds as the cellular device boots
         resp_error_handler(cmd.name, resp, 'STATUS_RESP')
         if resp.cfg_version != config.__version__:
             logger.warn('Board firmware configuration version is V%u but tool expects V%u', resp.cfg_version, config.__version__)
