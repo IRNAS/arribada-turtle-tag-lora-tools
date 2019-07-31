@@ -1276,14 +1276,14 @@ class ConfigItem_IOT_Satellite_Artic(ConfigItem):
     dev_addr = b''
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'7s240s', self.params, **kwargs)
+        ConfigItem.__init__(self, b'4s240s', self.params, **kwargs)
 
     def pack(self):
 
         if hasattr(self, 'deviceAddress'):
             dev_addr = binascii.unhexlify(self.deviceAddress.replace(':', ''))[::-1]
-            if len(dev_addr) != 7:
-                raise ExceptionConfigInvalidValue('deviceAddress must be 7 bytes long')
+            if len(dev_addr) != 4:
+                raise ExceptionConfigInvalidValue('deviceAddress must be 4 bytes long')
         else:
             raise ExceptionConfigInvalidValue('deviceAddress is a mandatory parameter')
 
