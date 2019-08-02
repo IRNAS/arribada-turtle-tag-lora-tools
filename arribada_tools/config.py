@@ -1219,6 +1219,21 @@ class ConfigItem_IOT_Satellite(ConfigItem):
     allowed_status_filter = ['LAST_LOG_READ_POS', 'LAST_GPS_LOCATION', 'BATTERY_LEVEL',
                              'BATTERY_VOLTAGE', 'LAST_CELLULAR_CONNECT', 'LAST_SAT_TX',
                              'NEXT_SAT_TX', 'CONFIG_VERSION', 'FW_VERSION']
+    # Maximum length permitted for Artic modem is 31 bytes for status reports - track how
+    # many bytes are needed based on statusFilter configuration
+    status_max_length = 31
+    status_header_length = 4
+    status_filter_length = {
+        'LAST_LOG_READ_POS': 4,
+        'LAST_GPS_LOCATION': 12,
+        'BATTERY_LEVEL': 1,
+        'BATTERY_VOLTAGE': 2,
+        'LAST_CELLULAR_CONNECT': 4,
+        'LAST_SAT_TX': 4,
+        'NEXT_SAT_TX': 4,
+        'CONFIG_VERSION': 4,
+        'FW_VERSION': 4
+    }
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?BIBIIB', self.params, **kwargs)
@@ -1238,13 +1253,17 @@ class ConfigItem_IOT_Satellite(ConfigItem):
     def pack(self):
         
         if hasattr(self, 'statusFilter'):
+            actual_length = self.status_header_length
             statusFilter = self.statusFilter
             self.statusFilter = 0
             for i in statusFilter:
                 if i in self.allowed_status_filter:
                     self.statusFilter = self.statusFilter | (1 << self.allowed_status_filter.index(i))
+                    actual_length += self.status_filter_length[i]
                 else:
                     raise ExceptionConfigInvalidValue('statusFilter must be one of %s' % self.allowed_status_filter)
+                if actual_length > self.status_max_length:
+                    raise ExceptionConfigInvalidValue('statusFilter requires %s bytes payload size versus max. %s' % (actual_length, self.status_max_length))
         else:
             raise ExceptionConfigInvalidValue('statusFilter is a mandatory parameter')
 
