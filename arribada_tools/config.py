@@ -1290,6 +1290,8 @@ class ConfigItem_IOT_Satellite_Artic(ConfigItem):
         if hasattr(self, 'bulletin'):
             if type(self.bulletin) is not list:
                 raise ExceptionConfigInvalidValue('bulletin is a mandatory parameter')
+            if len(self.bulletin) == 0:
+                logger.warn('bulletin is empty - prepass algorithm will be disabled on target')
             for i in self.bulletin:
                 if type(i) is not dict:
                     raise ExceptionConfigInvalidValue('bulletin entry "%s" is not valid' % i)
