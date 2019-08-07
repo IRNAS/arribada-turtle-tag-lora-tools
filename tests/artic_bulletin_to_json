@@ -16,7 +16,7 @@ def bulletin_to_dict(f):
     json_dict['bulletin'] = []
     for i in f:
         try:
-            (sat_code, year, month, day, hour, minute, sec, p1, p2, p3, p4, p5, p6) = \
+            (sat_code, var_unused_1, var_unused_2, var_unused_3, var_unused_4, year, month, day, hour, minute, sec, p1, p2, p3, p4, p5, p6) = \
                 i.split()
         except:
             continue
