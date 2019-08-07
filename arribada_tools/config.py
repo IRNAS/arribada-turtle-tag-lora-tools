@@ -1297,13 +1297,13 @@ class ConfigItem_IOT_Satellite_Artic(ConfigItem):
                 seconds_since_epoch = None
                 bulletin_params = None
                 for k in i.keys():
-                    if k is 'satelliteCode':
+                    if k == 'satelliteCode':
                         sat_code = i[k]
                         if len(sat_code) != 2:
                             raise ExceptionConfigInvalidValue('bulletin entry "%s" contains invalid fields - satelliteCode must be two ASCII bytes' % i)
-                    elif k is 'secondsSinceEpoch':
+                    elif k == 'secondsSinceEpoch':
                         seconds_since_epoch = i[k]
-                    elif k is 'params':
+                    elif k == 'params':
                         bulletin_params = i[k]
                         if len(bulletin_params) != 6:
                             raise ExceptionConfigInvalidValue('bulletin entry "%s" contains invalid fields - params must be 6 floats' % i)
@@ -1311,7 +1311,7 @@ class ConfigItem_IOT_Satellite_Artic(ConfigItem):
                         raise ExceptionConfigInvalidValue('bulletin entry "%s" contains invalid fields - use: %s' % (i, self.allowed_bulletin_fields))
                 if None in [sat_code, seconds_since_epoch, bulletin_params]:
                     raise ExceptionConfigInvalidValue('bulletin entry "%s" must specify all fields: %s' % (i, self.allowed_bulletin_fields))
-                self.bulletin_raw += struct.pack(b'2sI6f', sat_code, seconds_since_epoch, *bulletin_params)
+                self.bulletin_raw += struct.pack(b'2sI6f', sat_code.encode('utf-8'), seconds_since_epoch, *bulletin_params)
         else:
             raise ExceptionConfigInvalidValue('bulletin is a mandatory parameter')
 
