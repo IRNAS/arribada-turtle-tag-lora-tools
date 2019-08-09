@@ -1311,7 +1311,7 @@ class ConfigItem_IOT_Satellite_Artic(ConfigItem):
                         raise ExceptionConfigInvalidValue('bulletin entry "%s" contains invalid fields - use: %s' % (i, self.allowed_bulletin_fields))
                 if None in [sat_code, seconds_since_epoch, bulletin_params]:
                     raise ExceptionConfigInvalidValue('bulletin entry "%s" must specify all fields: %s' % (i, self.allowed_bulletin_fields))
-                self.bulletin_raw += struct.pack(b'2sI6f', sat_code.encode('utf-8'), seconds_since_epoch, *bulletin_params)
+                self.bulletin_raw += struct.pack(b'<2sI6f', sat_code.encode('utf-8'), seconds_since_epoch, *bulletin_params)
         else:
             raise ExceptionConfigInvalidValue('bulletin is a mandatory parameter')
 
