@@ -462,3 +462,13 @@ class LogItem_IOT_networkInfo(LogItem):
             self.technology = '2G'
         if self.technology == 2:
             self.technology = '3G'
+
+
+
+class LogItem_IOT_Next_prepas(LogItem):
+    tag = 0x25
+    name = 'NextPrepasSat'
+    fields = [ 'next_satellite_predict', 'gps_timestamp']
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'II', self.fields, **kwargs)
