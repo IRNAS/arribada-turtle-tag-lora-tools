@@ -24,8 +24,6 @@ parser.add_argument('--erase_log', action='store_true', required=False)
 parser.add_argument('--create_log', required=False)
 parser.add_argument('--reset', required=False)
 parser.add_argument('--test_mode', type=lambda s: [i.strip() for i in s.split(',')], required=False)
-parser.add_argument('--protect', action='store_true', required=False)
-parser.add_argument('--unprotect', action='store_true', required=False)
 parser.add_argument('--setdatetime', required=False)
 parser.add_argument('--setdatetimeutc', action='store_true', required=False)
 parser.add_argument('--getdatetime', action='store_true', required=False)
@@ -70,9 +68,6 @@ try:
     if args.restore:
         cfg.restore_configuration()
     
-    if args.unprotect:
-        cfg.unprotect_configuration()
-    
     if args.erase:
         cfg.erase_configuration()
     
@@ -94,9 +89,6 @@ try:
     
     if args.read:
         args.read.write(cfg.read_json_configuration())
-
-    if args.protect:
-        cfg.protect_configuration()
 
     if args.test_mode:
         cfg.test_mode(args.test_mode)

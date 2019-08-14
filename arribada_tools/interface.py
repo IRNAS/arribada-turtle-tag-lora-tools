@@ -82,16 +82,6 @@ class ConfigInterface(object):
         objs = config.decode_all(config_data)
         return config.json_dumps(objs)
 
-    def protect_configuration(self):
-        cmd = message.ConfigMessage_CFG_PROTECT_REQ()
-        resp = self._backend.command_response(cmd, self.timeout)
-        resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
-
-    def unprotect_configuration(self):
-        cmd = message.ConfigMessage_CFG_UNPROTECT_REQ()
-        resp = self._backend.command_response(cmd, self.timeout)
-        resp_error_handler(cmd.name, resp, 'GENERIC_RESP')
-
     def erase_configuration(self):
         self._erase_config()
         self._save_config()
