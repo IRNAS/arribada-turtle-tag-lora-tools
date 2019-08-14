@@ -421,9 +421,13 @@ def delete_iot_thing(thing_name):
         pass
     cli = boto3.client('iot')
     principals = cli.list_thing_principals(thingName=thing_name)
+
     for p in principals['principals']:
         cli.detach_thing_principal(thingName=thing_name, principal=p)
+        cli.detach_policy(policyName=thing_name, target=p)
+        delete_iot_certificate_by_arn(p)
     cli.delete_thing(thingName=thing_name)
+    delete_iot_policy(thing_name)
 
 
 def delete_iot_things():
@@ -456,6 +460,15 @@ def delete_iot_thing_group():
     cli.delete_thing_group(thingGroupName=IOT_GROUP)
 
 
+def delete_iot_policy(policy_name):
+    cli = boto3.client('iot')
+    targets = cli.list_targets_for_policy(policyName=policy_name)
+    if 'principals' in targets:
+        for t in targets['principals']:
+            cli.detach_policy(policyName=policy_name, target=t)
+    cli.delete_policy(policyName=policy_name)
+
+
 def delete_iot_policies():
     cli = boto3.client('iot')
     policies = cli.list_policies()
@@ -475,6 +488,18 @@ def delete_iot_certificates_by_ca(ca_cert_id):
     for i in certs['certificates']:
         cli.update_certificate(certificateId=i['certificateId'], newStatus='INACTIVE')
         cli.delete_certificate(certificateId=i['certificateId'])
+
+
+def get_cert_id_from_arn(cert_arn):
+    (_, cert_id)  = cert_arn.split('/')
+    return cert_id
+
+
+def delete_iot_certificate_by_arn(cert_arn):
+    cli = boto3.client('iot')
+    cert_id = get_cert_id_from_arn(cert_arn)    
+    cli.update_certificate(certificateId=cert_id, newStatus='INACTIVE')
+    cli.delete_certificate(certificateId=cert_id)
 
 
 def delete_iot_ca_certificate(ca_cert_id):
