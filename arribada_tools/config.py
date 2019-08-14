@@ -1069,8 +1069,8 @@ class ConfigItem_IOT_Cellular(ConfigItem):
         else:
             raise ExceptionConfigInvalidValue('statusFilter is a mandatory parameter')
 
-        if self.minUpdates < 1:
-            raise ExceptionConfigInvalidValue('minUpdates must be >= 1')
+        if self.minUpdates < 0:
+            raise ExceptionConfigInvalidValue('minUpdates must be >= 0')
 
         data = ConfigItem.pack(self)
         self.connectionMode = connectionMode
@@ -1267,8 +1267,8 @@ class ConfigItem_IOT_Satellite(ConfigItem):
         else:
             raise ExceptionConfigInvalidValue('statusFilter is a mandatory parameter')
 
-        if self.minUpdates < 1:
-            raise ExceptionConfigInvalidValue('minUpdates must be >= 1')
+        if self.minUpdates < 0:
+            raise ExceptionConfigInvalidValue('minUpdates must be >= 0')
 
         data = ConfigItem.pack(self)
         self.statusFilter = statusFilter
