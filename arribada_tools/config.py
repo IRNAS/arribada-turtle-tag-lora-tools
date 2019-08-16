@@ -1288,23 +1288,29 @@ class ConfigItem_IOT_Satellite(ConfigItem):
 class ConfigItem_IOT_Satellite_Artic(ConfigItem):
     tag = 0x0A11
     path = 'iot.satellite.artic'
-    params = ['deviceAddress', 'bulletin']
+    params = ['deviceAddress', 'minElevation', 'bulletin']
     json_params = params
     allowed_bulletin_fields = ['satelliteCode', 'secondsSinceEpoch', 'params']
     bulletin_raw = b''
     dev_addr = b''
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'7s240s', self.params, **kwargs)
+        ConfigItem.__init__(self, b'4sB240s', self.params, **kwargs)
 
     def pack(self):
 
         if hasattr(self, 'deviceAddress'):
             dev_addr = binascii.unhexlify(self.deviceAddress.replace(':', ''))[::-1]
-            if len(dev_addr) != 7:
-                raise ExceptionConfigInvalidValue('deviceAddress must be 7 bytes long')
+            if len(dev_addr) != 4:
+                raise ExceptionConfigInvalidValue('deviceAddress must be 4 bytes long')
         else:
             raise ExceptionConfigInvalidValue('deviceAddress is a mandatory parameter')
+
+        if hasattr(self, 'minElevation'):
+            if self.minElevation < 10 or self.minElevation > 70:
+                raise ExceptionConfigInvalidValue('minElevation "%s" is not valid - use range is 10..70' % self.minElevation)
+        else:
+            self.minElevation = 45
 
         if hasattr(self, 'bulletin'):
             if type(self.bulletin) is not list:
@@ -1318,13 +1324,13 @@ class ConfigItem_IOT_Satellite_Artic(ConfigItem):
                 seconds_since_epoch = None
                 bulletin_params = None
                 for k in i.keys():
-                    if k is 'satelliteCode':
+                    if k == 'satelliteCode':
                         sat_code = i[k]
                         if len(sat_code) != 2:
                             raise ExceptionConfigInvalidValue('bulletin entry "%s" contains invalid fields - satelliteCode must be two ASCII bytes' % i)
-                    elif k is 'secondsSinceEpoch':
+                    elif k == 'secondsSinceEpoch':
                         seconds_since_epoch = i[k]
-                    elif k is 'params':
+                    elif k == 'params':
                         bulletin_params = i[k]
                         if len(bulletin_params) != 6:
                             raise ExceptionConfigInvalidValue('bulletin entry "%s" contains invalid fields - params must be 6 floats' % i)
@@ -1332,7 +1338,7 @@ class ConfigItem_IOT_Satellite_Artic(ConfigItem):
                         raise ExceptionConfigInvalidValue('bulletin entry "%s" contains invalid fields - use: %s' % (i, self.allowed_bulletin_fields))
                 if None in [sat_code, seconds_since_epoch, bulletin_params]:
                     raise ExceptionConfigInvalidValue('bulletin entry "%s" must specify all fields: %s' % (i, self.allowed_bulletin_fields))
-                self.bulletin_raw += struct.pack(b'2sI6f', sat_code, seconds_since_epoch, *bulletin_params)
+                self.bulletin_raw += struct.pack(b'<2sI6f', sat_code.encode('utf-8'), seconds_since_epoch, *bulletin_params)
         else:
             raise ExceptionConfigInvalidValue('bulletin is a mandatory parameter')
 
@@ -1349,7 +1355,32 @@ class ConfigItem_IOT_Satellite_Artic(ConfigItem):
         return data
 
     def unpack(self, data):
-        pass
+        ConfigItem.unpack(self, data)
+
+        device_id = binascii.hexlify(self.deviceAddress[::-1])
+        new_id = b''
+        for i in range(len(device_id)):
+            new_id = new_id + device_id[i]
+            if i & 1 and i != (len(device_id)-1):
+                new_id = new_id + ':'
+        self.deviceAddress = new_id
+
+        bulletin_raw = self.bulletin
+        fmt = b'<2sI6f'
+        bulletin = []
+        i = 0
+
+        while i < len(bulletin_raw):
+            (sat_code, timestamp, f1, f2, f3, f4, f5, f6) = struct.unpack_from(fmt, bulletin_raw, i)
+            i = i + struct.calcsize(fmt)
+            if sat_code[0] != '\x00':
+                bulletin.append({'satelliteCode':sat_code,
+                                 'secondsSinceEpoch':timestamp,
+                                 'params': [f1,f2,f3,f4,f5,f6]})
+            else:
+                break
+
+        self.bulletin = bulletin
 
 
 class ConfigItem_Battery_LogEnable(ConfigItem):

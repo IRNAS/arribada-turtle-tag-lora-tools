@@ -394,7 +394,8 @@ class LogItem_IOT_Status(LogItem):
     fields = ['status']
     allowed_status = ['CELLULAR_POWERED_OFF', 'CELLULAR_POWERED_ON', 'CELLULAR_CONNECT',
                       'CELLULAR_FETCH_DEVICE_SHADOW', 'CELLULAR_SEND_LOGGING', 'CELLULAR_SEND_DEVICE_STATUS',
-                      'CELLULAR_MAX_BACKOFF_REACHED', 'CELLULAR_DOWNLOAD_FIRMWARE', 'CELLULAR_DOWNLOAD_CONFIG'
+                      'CELLULAR_MAX_BACKOFF_REACHED', 'CELLULAR_DOWNLOAD_FIRMWARE', 'CELLULAR_DOWNLOAD_CONFIG',
+                      'SATELLITE_POWERED_OFF', 'SATELLITE_POWERED_ON', 'SATELLITE_SEND_DEVICE_STATUS'
                       ]
 
     def __init__(self, **kwargs):
@@ -461,3 +462,13 @@ class LogItem_IOT_networkInfo(LogItem):
             self.technology = '2G'
         if self.technology == 2:
             self.technology = '3G'
+
+
+
+class LogItem_IOT_Next_prepas(LogItem):
+    tag = 0x25
+    name = 'NextPrepasSat'
+    fields = [ 'next_satellite_predict', 'gps_timestamp']
+
+    def __init__(self, **kwargs):
+        LogItem.__init__(self, b'II', self.fields, **kwargs)
