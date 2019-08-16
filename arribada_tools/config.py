@@ -1269,14 +1269,14 @@ class ConfigItem_IOT_Satellite(ConfigItem):
 class ConfigItem_IOT_Satellite_Artic(ConfigItem):
     tag = 0x0A11
     path = 'iot.satellite.artic'
-    params = ['deviceAddress', 'bulletin']
+    params = ['deviceAddress', 'minElevation', 'bulletin']
     json_params = params
     allowed_bulletin_fields = ['satelliteCode', 'secondsSinceEpoch', 'params']
     bulletin_raw = b''
     dev_addr = b''
 
     def __init__(self, **kwargs):
-        ConfigItem.__init__(self, b'4s240s', self.params, **kwargs)
+        ConfigItem.__init__(self, b'4sB240s', self.params, **kwargs)
 
     def pack(self):
 
@@ -1286,6 +1286,12 @@ class ConfigItem_IOT_Satellite_Artic(ConfigItem):
                 raise ExceptionConfigInvalidValue('deviceAddress must be 4 bytes long')
         else:
             raise ExceptionConfigInvalidValue('deviceAddress is a mandatory parameter')
+
+        if hasattr(self, 'minElevation'):
+            if self.minElevation < 10 or self.minElevation > 70:
+                raise ExceptionConfigInvalidValue('minElevation "%s" is not valid - use range is 10..70' % self.minElevation)
+        else:
+            self.minElevation = 45
 
         if hasattr(self, 'bulletin'):
             if type(self.bulletin) is not list:
