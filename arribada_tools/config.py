@@ -1334,7 +1334,32 @@ class ConfigItem_IOT_Satellite_Artic(ConfigItem):
         return data
 
     def unpack(self, data):
-        pass
+        ConfigItem.unpack(self, data)
+
+        device_id = binascii.hexlify(self.deviceAddress[::-1])
+        new_id = b''
+        for i in range(len(device_id)):
+            new_id = new_id + device_id[i]
+            if i & 1 and i != (len(device_id)-1):
+                new_id = new_id + ':'
+        self.deviceAddress = new_id
+
+        bulletin_raw = self.bulletin
+        fmt = b'<2sI6f'
+        bulletin = []
+        i = 0
+
+        while i < len(bulletin_raw):
+            (sat_code, timestamp, f1, f2, f3, f4, f5, f6) = struct.unpack_from(fmt, bulletin_raw, i)
+            i = i + struct.calcsize(fmt)
+            if sat_code[0] != '\x00':
+                bulletin.append({'satelliteCode':sat_code,
+                                 'secondsSinceEpoch':timestamp,
+                                 'params': [f1,f2,f3,f4,f5,f6]})
+            else:
+                break
+
+        self.bulletin = bulletin
 
 
 class ConfigItem_Battery_LogEnable(ConfigItem):
