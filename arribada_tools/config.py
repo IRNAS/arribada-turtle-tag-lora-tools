@@ -44,7 +44,7 @@ def _pathsplit(fullpath):
 def _findclass(fullpath):
     """Give a path name we identify to which configuration class it
     belongs.  The path uniquely identifies every configuration value
-    and the root path denotes which class it belongs i.e., this code 
+    and the root path denotes which class it belongs i.e., this code
     performs a reverse search across all classes."""
     (path, param) = _pathsplit(fullpath)
     for i in inspect.getmembers(sys.modules[__name__], inspect.isclass):
@@ -216,7 +216,7 @@ class ConfigItem_System_DeviceName(ConfigItem):
         ConfigItem.__init__(self, b'256s', self.params, **kwargs)
 
     def pack(self):
-        
+
         if hasattr(self, 'deviceName'):
             deviceName = self.deviceName
             if len(self.deviceName.encode('ascii', 'ignore')) > 255: # we use 255 bytes as the last must be a null '\0'
@@ -1010,7 +1010,7 @@ class ConfigItem_IOT_Cellular(ConfigItem):
     allowed_log_filter = ['GPS', 'TIMESTAMP', 'DATETIME', 'BATTERY_VOLTAGE', 'BATTERY_LEVEL' ]
     allowed_status_filter = ['LAST_LOG_READ_POS', 'LAST_GPS_LOCATION', 'BATTERY_LEVEL',
                              'BATTERY_VOLTAGE', 'LAST_CELLULAR_CONNECT', 'LAST_SAT_TX',
-                             'NEXT_SAT_TX', 'CONFIG_VERSION', 'FW_VERSION']                             
+                             'NEXT_SAT_TX', 'CONFIG_VERSION', 'FW_VERSION']
 
     def __init__(self, **kwargs):
         ConfigItem.__init__(self, b'?BBII??BIIII', self.params, **kwargs)
@@ -1038,7 +1038,7 @@ class ConfigItem_IOT_Cellular(ConfigItem):
             self.gpsScheduleIntervalOnMaxBackoff = 0     # Means disable
 
     def pack(self):
-        
+
         connectionMode = self.connectionMode
         if connectionMode in self.allow_connection_mode:
             self.connectionMode = self.allow_connection_mode.index(connectionMode)
@@ -1251,7 +1251,7 @@ class ConfigItem_IOT_Satellite(ConfigItem):
             self.randomizedTxWindow = 0
 
     def pack(self):
-        
+
         if hasattr(self, 'statusFilter'):
             actual_length = self.status_header_length
             statusFilter = self.statusFilter
@@ -1381,6 +1381,20 @@ class ConfigItem_IOT_Satellite_Artic(ConfigItem):
                 break
 
         self.bulletin = bulletin
+
+
+class ConfigItem_IOT_LoRA(ConfigItem):
+    tag = 0x0A20
+    path = 'iot.lora'
+    params = ['enable', 'interval']
+    json_params = params
+
+    def __init__(self, **kwargs):
+        ConfigItem.__init__(self, b'BI', self.params, **kwargs)
+        if not hasattr(self, 'enable'):
+            self.enable = True
+        if not hasattr(self, 'interval'):
+            self.interval = 0 # Disable by default.
 
 
 class ConfigItem_Battery_LogEnable(ConfigItem):
