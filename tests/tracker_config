@@ -75,7 +75,7 @@ try:
         cfg.write_json_configuration(args.write.read())
     
     if args.setdatetime:
-    	logger.warn('Please consider using --setdatetimeutc instead')
+    	logging.warn('Please consider using --setdatetimeutc instead')
         cfg.write_json_configuration(json='{"rtc": { "dateTime": "%s"}}' % args.setdatetime, erase=False)
 
     if args.setdatetimeutc:
